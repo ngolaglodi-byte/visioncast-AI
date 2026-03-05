@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
     app.setOrganizationName("VisionCast");
 
     visioncast_ui::MainWindow window;
-    window.setWindowTitle("VisionCast AI — Broadcast Control Room");
+    window.setWindowTitle("VisionCast-AI — Broadcast Control Room");
     window.resize(1600, 900);
     window.show();
 

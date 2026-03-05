@@ -55,7 +55,7 @@ VideoFrame FilterChain::apply(const VideoFrame& input) {
 
 void FilterChain::setEnabled(const std::string& filterName, bool enabled) {
     for (auto& filter : filters_) {
-        if (filter->name() == filterName) {
+        if (filter && filter->name() == filterName) {
             filter->setEnabled(enabled);
             return;
         }
