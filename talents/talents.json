@@ -3,6 +3,7 @@
     {
       "id": "glody",
       "name": "Glody",
+      "role": "Présentateur",
       "image": "talents/glody.jpeg",
       "overlay": "overlays/default.png"
     }

@@ -1,0 +1,164 @@
+# ============================================================
+# VisionCast-AI .gitignore
+# Python (IA) + C++ (engine) + Qt (UI) + SDKs + Node/Electron
+# ============================================================
+
+# ----- Python -----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+*.whl
+.venv/
+venv/
+env/
+ENV/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+*.manifest
+*.spec
+
+# ----- C++ / CMake -----
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.o
+*.obj
+*.a
+*.lib
+*.dll
+*.dylib
+*.so
+*.so.*
+*.exe
+*.out
+*.app
+
+# ----- Qt / Qt Creator -----
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+*.moc
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+*.autosave
+*.ui.autosave
+*.creator.user
+*.creator.user.*
+*.qmlc
+*.jsc
+
+# ----- SDK: DeckLink / AJA / Magewell / NDI -----
+sdk/decklink/lib/
+sdk/aja/lib/
+sdk/magewell/lib/
+sdk/ndi/lib/
+*.framework/
+SDK_*.zip
+SDK_*.tar.gz
+
+# ----- Node / Electron -----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp/
+.pnp.js
+package-lock.json
+yarn.lock
+
+# ----- AI Models & Large Files -----
+*.dat
+*.bin
+*.h5
+*.hdf5
+*.onnx
+*.pth
+*.pt
+*.pb
+*.tflite
+*.caffemodel
+*.pkl
+*.pickle
+models/
+weights/
+
+# ----- Video / Audio / Heavy Media -----
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.wmv
+*.flv
+*.webm
+*.ts
+*.m3u8
+*.wav
+*.mp3
+*.flac
+
+# ----- Images (keep small assets, ignore heavy ones) -----
+# *.jpeg and *.png are allowed for small assets (talents, overlays)
+*.bmp
+*.tiff
+*.tif
+*.raw
+*.psd
+
+# ----- IDE / Editor -----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ----- OS Files -----
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ----- Environment & Secrets -----
+.env
+.env.*
+*.pem
+*.key
+*.crt
+credentials.json
+secrets.json
+config.local.*
+
+# ----- Logs & Temp -----
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.bak
+*.cache
+
+# ----- Coverage & Testing -----
+htmlcov/
+.coverage
+.coverage.*
+.pytest_cache/
+.tox/
+.nox/
+nosetests.xml
+coverage.xml
+*.cover
