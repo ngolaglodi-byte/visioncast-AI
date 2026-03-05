@@ -3,8 +3,8 @@
     {
       "id": "glody",
       "name": "Glody",
-      "image": "talents/glody.jpeg",
-      "overlay": "overlays/default.png"
+      "image": "../talents/glody.jpeg",
+      "overlay": "../overlays/default.png"
     }
   ]
 }
