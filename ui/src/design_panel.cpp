@@ -3,7 +3,9 @@
 
 #include "visioncast_ui/design_panel.h"
 
+#include <QCheckBox>
 #include <QComboBox>
+#include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QLineEdit>
 #include <QPushButton>
@@ -28,6 +30,7 @@ DesignPanel::DesignPanel(QWidget* parent)
     tabs_->addTab(createColorsTab(),       "Colors");
     tabs_->addTab(createLogosTab(),        "Logos");
     tabs_->addTab(createTransitionsTab(),  "Transitions");
+    tabs_->addTab(createVideoFiltersTab(), "Video Filters");
 
     root->addWidget(tabs_);
     setLayout(root);
@@ -43,15 +46,24 @@ QWidget* DesignPanel::createLowerThirdsTab() {
 
     lowerThirdTitleEdit_    = new QLineEdit(page);
     lowerThirdSubtitleEdit_ = new QLineEdit(page);
+
+    lowerThirdDurationSpin_ = new QDoubleSpinBox(page);
+    lowerThirdDurationSpin_->setRange(0.5, 60.0);
+    lowerThirdDurationSpin_->setDecimals(1);
+    lowerThirdDurationSpin_->setSuffix(" s");
+    lowerThirdDurationSpin_->setValue(5.0);
+
     applyLowerThirdButton_  = new QPushButton("Apply", page);
 
     layout->addRow("Title:",    lowerThirdTitleEdit_);
     layout->addRow("Subtitle:", lowerThirdSubtitleEdit_);
+    layout->addRow("Display duration (seconds):", lowerThirdDurationSpin_);
     layout->addRow(applyLowerThirdButton_);
 
     connect(applyLowerThirdButton_, &QPushButton::clicked, this, [this]() {
         emit lowerThirdApplied(lowerThirdTitleEdit_->text(),
-                               lowerThirdSubtitleEdit_->text());
+                               lowerThirdSubtitleEdit_->text(),
+                               lowerThirdDurationSpin_->value());
         emit designChanged();
     });
 
@@ -167,6 +179,37 @@ QWidget* DesignPanel::createTransitionsTab() {
     return page;
 }
 
+QWidget* DesignPanel::createVideoFiltersTab() {
+    auto* page   = new QWidget(this);
+    auto* layout = new QVBoxLayout(page);
+
+    filterCinemaLutCheck_      = new QCheckBox("Cinema LUT", page);
+    filterSharpenCheck_        = new QCheckBox("Sharpen", page);
+    filterNoiseReductionCheck_ = new QCheckBox("Noise Reduction", page);
+    filterHdrTonemapCheck_     = new QCheckBox("HDR Tonemap", page);
+    filterDynamicContrastCheck_ = new QCheckBox("Dynamic Contrast", page);
+
+    layout->addWidget(filterCinemaLutCheck_);
+    layout->addWidget(filterSharpenCheck_);
+    layout->addWidget(filterNoiseReductionCheck_);
+    layout->addWidget(filterHdrTonemapCheck_);
+    layout->addWidget(filterDynamicContrastCheck_);
+    layout->addStretch();
+
+    auto emitFilters = [this]() {
+        emit videoFiltersChanged();
+        emit designChanged();
+    };
+
+    connect(filterCinemaLutCheck_,      &QCheckBox::toggled, this, emitFilters);
+    connect(filterSharpenCheck_,        &QCheckBox::toggled, this, emitFilters);
+    connect(filterNoiseReductionCheck_, &QCheckBox::toggled, this, emitFilters);
+    connect(filterHdrTonemapCheck_,     &QCheckBox::toggled, this, emitFilters);
+    connect(filterDynamicContrastCheck_, &QCheckBox::toggled, this, emitFilters);
+
+    return page;
+}
+
 // -----------------------------------------------------------------
 // Lower thirds
 // -----------------------------------------------------------------
@@ -185,6 +228,14 @@ QString DesignPanel::lowerThirdTitle() const {
 
 QString DesignPanel::lowerThirdSubtitle() const {
     return lowerThirdSubtitleEdit_->text();
+}
+
+void DesignPanel::setLowerThirdDuration(double seconds) {
+    lowerThirdDurationSpin_->setValue(seconds);
+}
+
+double DesignPanel::lowerThirdDuration() const {
+    return lowerThirdDurationSpin_->value();
 }
 
 // -----------------------------------------------------------------
@@ -257,6 +308,27 @@ QString DesignPanel::transitionType() const {
 
 int DesignPanel::transitionDuration() const {
     return transitionDurationSpin_->value();
+}
+
+// -----------------------------------------------------------------
+// Video Filters
+// -----------------------------------------------------------------
+
+bool DesignPanel::isVideoFilterEnabled(const QString& filterName) const {
+    if (filterName == "cinema_lut")            return filterCinemaLutCheck_->isChecked();
+    else if (filterName == "sharpen")          return filterSharpenCheck_->isChecked();
+    else if (filterName == "noise_reduction")  return filterNoiseReductionCheck_->isChecked();
+    else if (filterName == "hdr_tonemap")      return filterHdrTonemapCheck_->isChecked();
+    else if (filterName == "dynamic_contrast") return filterDynamicContrastCheck_->isChecked();
+    return false;
+}
+
+void DesignPanel::setVideoFilterEnabled(const QString& filterName, bool enabled) {
+    if (filterName == "cinema_lut")       filterCinemaLutCheck_->setChecked(enabled);
+    else if (filterName == "sharpen")          filterSharpenCheck_->setChecked(enabled);
+    else if (filterName == "noise_reduction")  filterNoiseReductionCheck_->setChecked(enabled);
+    else if (filterName == "hdr_tonemap")      filterHdrTonemapCheck_->setChecked(enabled);
+    else if (filterName == "dynamic_contrast") filterDynamicContrastCheck_->setChecked(enabled);
 }
 
 // -----------------------------------------------------------------

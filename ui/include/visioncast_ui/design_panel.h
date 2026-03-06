@@ -2,11 +2,13 @@
 
 /// @file design_panel.h
 /// @brief Design & overlays panel — lower thirds, animated templates,
-///        themes, colors, logos, and transitions.
+///        themes, colors, logos, transitions, and video filters.
 
 #include <QWidget>
 
+class QCheckBox;
 class QComboBox;
+class QDoubleSpinBox;
 class QLineEdit;
 class QPushButton;
 class QSpinBox;
@@ -14,9 +16,9 @@ class QTabWidget;
 
 namespace visioncast_ui {
 
-/// Design panel that exposes the six overlay-related sub-sections
-/// requested for the broadcast UI: lower thirds, animated templates,
-/// themes, colors, logos and transitions.
+/// Design panel that exposes the seven overlay-related sub-sections
+/// for the broadcast UI: lower thirds, animated templates,
+/// themes, colors, logos, transitions, and video filters.
 class DesignPanel : public QWidget {
     Q_OBJECT
 
@@ -26,8 +28,10 @@ public:
     // -- Lower thirds ------------------------------------------------
     void    setLowerThirdTitle(const QString& title);
     void    setLowerThirdSubtitle(const QString& subtitle);
+    void    setLowerThirdDuration(double seconds);
     QString lowerThirdTitle() const;
     QString lowerThirdSubtitle() const;
+    double  lowerThirdDuration() const;
 
     // -- Templates ---------------------------------------------------
     QString currentTemplateName() const;
@@ -52,23 +56,30 @@ public:
     QString transitionType() const;
     int     transitionDuration() const;
 
+    // -- Video Filters -----------------------------------------------
+    bool isVideoFilterEnabled(const QString& filterName) const;
+    void setVideoFilterEnabled(const QString& filterName, bool enabled);
+
     // -- Configuration -----------------------------------------------
     void loadConfig(const QString& path);
     void saveConfig(const QString& path);
 
 signals:
     void designChanged();
-    void lowerThirdApplied(const QString& title, const QString& subtitle);
+    void lowerThirdApplied(const QString& title, const QString& subtitle,
+                           double durationSeconds);
     void themeChanged(const QString& themeName);
     void colorsChanged(const QString& primary, const QString& accent);
     void logoChanged(const QString& path);
     void transitionChanged(const QString& type, int durationMs);
+    void videoFiltersChanged();
 
 private:
     // Lower thirds
-    QLineEdit*   lowerThirdTitleEdit_    = nullptr;
-    QLineEdit*   lowerThirdSubtitleEdit_ = nullptr;
-    QPushButton* applyLowerThirdButton_  = nullptr;
+    QLineEdit*      lowerThirdTitleEdit_    = nullptr;
+    QLineEdit*      lowerThirdSubtitleEdit_ = nullptr;
+    QDoubleSpinBox* lowerThirdDurationSpin_ = nullptr;
+    QPushButton*    applyLowerThirdButton_  = nullptr;
 
     // Templates
     QComboBox* templateCombo_ = nullptr;
@@ -90,6 +101,13 @@ private:
     QComboBox* transitionCombo_        = nullptr;
     QSpinBox*  transitionDurationSpin_ = nullptr;
 
+    // Video Filters
+    QCheckBox* filterCinemaLutCheck_      = nullptr;
+    QCheckBox* filterSharpenCheck_        = nullptr;
+    QCheckBox* filterNoiseReductionCheck_ = nullptr;
+    QCheckBox* filterHdrTonemapCheck_     = nullptr;
+    QCheckBox* filterDynamicContrastCheck_ = nullptr;
+
     // Tabs
     QTabWidget* tabs_ = nullptr;
 
@@ -99,6 +117,7 @@ private:
     QWidget* createColorsTab();
     QWidget* createLogosTab();
     QWidget* createTransitionsTab();
+    QWidget* createVideoFiltersTab();
 };
 
 } // namespace visioncast_ui
