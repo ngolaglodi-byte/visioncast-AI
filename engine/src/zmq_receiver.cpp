@@ -75,6 +75,21 @@ double jsonNumber(const std::string& json, const std::string& key,
     }
 }
 
+/// Count consecutive backslashes immediately before position pos.
+size_t countPrecedingBackslashes(const std::string& s, size_t pos) {
+    size_t count = 0;
+    while (pos > 0 && s[pos - 1] == '\\') {
+        ++count;
+        --pos;
+    }
+    return count;
+}
+
+/// True if the quote at position pos is unescaped (even number of preceding backslashes).
+bool isUnescapedQuote(const std::string& s, size_t pos) {
+    return countPrecedingBackslashes(s, pos) % 2 == 0;
+}
+
 /// Extract a balanced JSON sub-object or sub-array for the given key.
 std::string jsonBlock(const std::string& json, const std::string& key) {
     const std::string needle = "\"" + key + "\"";
@@ -103,7 +118,7 @@ std::string jsonBlock(const std::string& json, const std::string& key) {
     bool inStr = false;
     while (pos < json.size() && depth > 0) {
         char c = json[pos];
-        if (c == '"' && (pos == 0 || json[pos - 1] != '\\'))
+        if (c == '"' && isUnescapedQuote(json, pos))
             inStr = !inStr;
         if (!inStr) {
             if (c == open) ++depth;
@@ -141,7 +156,7 @@ std::vector<std::string> jsonArrayElements(const std::string& arr) {
         bool inStr = false;
         while (pos < arr.size() && depth > 0) {
             char c = arr[pos];
-            if (c == '"' && (pos == 0 || arr[pos - 1] != '\\'))
+            if (c == '"' && isUnescapedQuote(arr, pos))
                 inStr = !inStr;
             if (!inStr) {
                 if (c == open) ++depth;
@@ -211,6 +226,9 @@ void ZmqReceiver::listenerLoop() {
             auto res = socket.recv(topicMsg, zmq::recv_flags::none);
             if (!res) continue; // timeout – re-check running_
 
+            // Multipart: verify a second frame is expected before receiving.
+            if (!topicMsg.more()) continue;
+
             // Receive the payload frame.
             res = socket.recv(payloadMsg, zmq::recv_flags::none);
             if (!res) continue;
@@ -221,9 +239,6 @@ void ZmqReceiver::listenerLoop() {
             RecognitionMetadata metadata = parseJson(payload);
             store_.update(metadata);
         }
-
-        socket.close();
-        context.close();
     } catch (const zmq::error_t& e) {
         std::cerr << "[ZmqReceiver] ZeroMQ error: " << e.what() << std::endl;
     }
