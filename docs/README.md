@@ -17,6 +17,16 @@ Technical documentation and development guides for VisionCast-AI.
   - Dépannage & FAQ
   - Mentions officielles
 
+- [**USER_MANUAL.md**](USER_MANUAL.md) — Manuel utilisateur complet destiné aux chaînes TV et opérateurs de régie :
+  - Introduction et architecture globale (IA + moteur vidéo + régie + SDK broadcast)
+  - Installation (Windows, macOS, drivers DeckLink/AJA/Magewell, NDI Tools)
+  - Workflow broadcast (caméras → régie → VisionCast‑AI → sortie finale)
+  - Utilisation de la régie VisionCast Control Room (7 panneaux détaillés)
+  - Gestion des talents (ajout, modification, overlays, thèmes, filtres)
+  - Gestion des overlays (templates, thèmes, animations, logos, couleurs)
+  - Sorties vidéo (SDI, NDI, SRT, RTMP)
+  - Guide de dépannage complet
+
 - [**ARCHITECTURE.md**](ARCHITECTURE.md) — Complete system architecture document covering:
   - System overview and high-level architecture
   - Directory structure and module organization
