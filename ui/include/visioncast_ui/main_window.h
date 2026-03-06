@@ -13,6 +13,8 @@ class MonitoringPanel;
 
 namespace visioncast_ui {
 
+class ControlRoom;
+
 /// Top-level application window for the VisionCast broadcast control room.
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -26,6 +28,8 @@ private slots:
     void onOverlayToggled(bool enabled);
     void onGoLive();
     void onStopBroadcast();
+    void onEngineStartRequested(const QString& sourceName);
+    void onEngineStopRequested();
 
 private:
     PreviewPanel* previewPanel_ = nullptr;
@@ -33,6 +37,7 @@ private:
     TalentManager* talentManager_ = nullptr;
     OutputConfig* outputConfig_ = nullptr;
     MonitoringPanel* monitoringPanel_ = nullptr;
+    ControlRoom* controlRoom_ = nullptr;
 
     void setupMenuBar();
     void setupDockWidgets();
