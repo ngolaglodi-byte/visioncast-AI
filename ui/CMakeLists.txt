@@ -24,6 +24,7 @@ set(UI_SOURCES
     src/talent_manager.cpp
     src/output_config.cpp
     src/monitoring_panel.cpp
+    src/control_room.cpp
 )
 
 add_executable(visioncast_ui ${UI_SOURCES})

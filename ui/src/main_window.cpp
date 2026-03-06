@@ -13,6 +13,7 @@
 #include "visioncast_ui/overlay_editor.h"
 #include "visioncast_ui/preview_panel.h"
 #include "visioncast_ui/talent_manager.h"
+#include "visioncast_ui/control_room.h"
 
 namespace visioncast_ui {
 
@@ -61,6 +62,17 @@ void MainWindow::setupDockWidgets() {
     // Dock: Monitoring
     monitoringPanel_ = new MonitoringPanel(this);
     addDockWidget(Qt::BottomDockWidgetArea, createDock("System Monitor", monitoringPanel_));
+
+    // Dock: Control Room
+    controlRoom_ = new ControlRoom(this);
+    addDockWidget(Qt::LeftDockWidgetArea, createDock("Control Room", controlRoom_));
+
+    connect(controlRoom_, &ControlRoom::sourceSelected,
+            this, &MainWindow::onSourceChanged);
+    connect(controlRoom_, &ControlRoom::engineStartRequested,
+            this, &MainWindow::onEngineStartRequested);
+    connect(controlRoom_, &ControlRoom::engineStopRequested,
+            this, &MainWindow::onEngineStopRequested);
 }
 
 QDockWidget* MainWindow::createDock(const QString& title, QWidget* widget) {
@@ -83,6 +95,14 @@ void MainWindow::onGoLive() {
 
 void MainWindow::onStopBroadcast() {
     statusBar()->showMessage("Broadcast stopped");
+}
+
+void MainWindow::onEngineStartRequested(const QString& sourceName) {
+    statusBar()->showMessage("Engine started — " + sourceName);
+}
+
+void MainWindow::onEngineStopRequested() {
+    statusBar()->showMessage("Engine stopped");
 }
 
 } // namespace visioncast_ui
