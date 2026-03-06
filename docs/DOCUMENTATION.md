@@ -323,7 +323,7 @@ cmake --build . --config Release
 
 #### 3.4.1 Blackmagic DeckLink
 
-1. Télécharger **Desktop Video** depuis [blackmagicdesign.com/support](https://www.blackmagicdesign.com/support)
+1. Télécharger **Desktop Video** depuis [blackmagicdesign.com/support/family/capture-and-playback](https://www.blackmagicdesign.com/support/family/capture-and-playback)
 2. Installer le package correspondant à votre OS
 3. Redémarrer la machine
 4. Vérifier la détection via **Blackmagic Desktop Video Setup**
@@ -796,8 +796,10 @@ Formats de pixels supportés :
 |--------|-------------|
 | BGRA8 | 8 bits par canal, format interne principal |
 | UYVY | YUV 4:2:2, format SDI standard |
-| V210 | YUV 4:2:2 10 bits, format broadcast professionnel |
+| V210 | YUV 4:2:2 10 bits, format broadcast professionnel (requiert DeckLink/AJA) |
 | NV12 | YUV 4:2:0, format compressé |
+
+> **Note** : Le format V210 (10 bits) nécessite une carte de capture professionnelle (DeckLink, AJA). Les webcams et périphériques grand public utilisent généralement BGRA8 ou UYVY comme format de fallback.
 
 Fréquences d'images supportées : **25**, **29.97**, **50**, **59.94** fps.
 
