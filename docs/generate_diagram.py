@@ -68,9 +68,9 @@ def main() -> None:
     formats = []
     if args.svg:
         formats.append("svg")
-    elif args.pdf:
+    if args.pdf:
         formats.append("pdf")
-    else:
+    if not formats:
         formats = list(FORMATS)
 
     for fmt in formats:
