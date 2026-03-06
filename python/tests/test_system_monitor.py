@@ -12,7 +12,6 @@ Validates that:
 
 import os
 import sys
-import time
 
 import pytest
 
@@ -103,14 +102,17 @@ class TestSystemMonitor:
         assert isinstance(metrics, SystemMetrics)
 
     def test_tick_updates_fps(self):
+        from unittest.mock import patch
         from monitoring.system_monitor import SystemMonitor
         monitor = SystemMonitor()
-        # Simulate several frames at ~100 fps
-        for _ in range(20):
-            monitor.tick()
-            time.sleep(0.01)
+        # Mock time.monotonic to produce deterministic frame timestamps
+        # Simulate 20 frames at exactly 100 fps (0.01s apart)
+        fake_time = 1000.0
+        with patch("time.monotonic") as mock_time:
+            for i in range(20):
+                mock_time.return_value = fake_time + i * 0.01
+                monitor.tick()
         metrics = monitor.snapshot()
-        # FPS should be in a reasonable range (not zero)
         assert metrics.fps > 0
 
     def test_dropped_frame_counter(self):
@@ -134,11 +136,15 @@ class TestSystemMonitor:
         assert metrics.gpu_percent >= 0.0
 
     def test_latency_from_fps(self):
+        from unittest.mock import patch
         from monitoring.system_monitor import SystemMonitor
         monitor = SystemMonitor()
-        for _ in range(30):
-            monitor.tick()
-            time.sleep(0.01)
+        # Mock time.monotonic to simulate known frame rate
+        fake_time = 1000.0
+        with patch("time.monotonic") as mock_time:
+            for i in range(30):
+                mock_time.return_value = fake_time + i * 0.01
+                monitor.tick()
         metrics = monitor.snapshot()
         if metrics.fps > 0:
             assert metrics.latency_ms > 0
