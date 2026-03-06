@@ -315,11 +315,11 @@ int DesignPanel::transitionDuration() const {
 // -----------------------------------------------------------------
 
 bool DesignPanel::isVideoFilterEnabled(const QString& filterName) const {
-    if (filterName == "cinema_lut")       return filterCinemaLutCheck_->isChecked();
-    if (filterName == "sharpen")          return filterSharpenCheck_->isChecked();
-    if (filterName == "noise_reduction")  return filterNoiseReductionCheck_->isChecked();
-    if (filterName == "hdr_tonemap")      return filterHdrTonemapCheck_->isChecked();
-    if (filterName == "dynamic_contrast") return filterDynamicContrastCheck_->isChecked();
+    if (filterName == "cinema_lut")            return filterCinemaLutCheck_->isChecked();
+    else if (filterName == "sharpen")          return filterSharpenCheck_->isChecked();
+    else if (filterName == "noise_reduction")  return filterNoiseReductionCheck_->isChecked();
+    else if (filterName == "hdr_tonemap")      return filterHdrTonemapCheck_->isChecked();
+    else if (filterName == "dynamic_contrast") return filterDynamicContrastCheck_->isChecked();
     return false;
 }
 
