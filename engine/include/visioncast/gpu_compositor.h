@@ -114,7 +114,7 @@ struct CompositingLayer {
 
     bool visible = true;
 
-    /// Raw RGBA pixel data (CPU side, uploaded to GPU when dirty).
+    /// Raw BGRA pixel data (CPU side, uploaded to GPU when dirty).
     std::vector<uint8_t> pixels;
     int texWidth  = 0;
     int texHeight = 0;
@@ -193,10 +193,10 @@ public:
 
     // ---- Layer Management -------------------------------------------
 
-    /// Add a layer with raw RGBA pixel data.
+    /// Add a layer with raw BGRA pixel data.
     /// @return true on success.
     bool addLayer(const std::string& id,
-                  const uint8_t* rgbaData, int texW, int texH,
+                  const uint8_t* bgraData, int texW, int texH,
                   float posX, float posY, float w, float h,
                   int zOrder = 0);
 
@@ -211,7 +211,7 @@ public:
 
     /// Update a layer's pixel data (e.g. animated sprite sheet).
     bool updateLayerPixels(const std::string& id,
-                           const uint8_t* rgbaData, int texW, int texH);
+                           const uint8_t* bgraData, int texW, int texH);
 
     /// Set layer visibility.
     void setLayerVisible(const std::string& id, bool visible);

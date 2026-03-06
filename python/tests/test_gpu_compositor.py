@@ -129,9 +129,14 @@ class TestOverlayTemplateSchema:
 
     def test_layout_has_required_keys(self, template_data):
         layout = template_data["layout"]
-        for key in ("title_offset_x", "title_offset_y",
-                     "subtitle_offset_x", "subtitle_offset_y",
-                     "logo_position"):
+        required = (
+            "title_offset_x",
+            "title_offset_y",
+            "subtitle_offset_x",
+            "subtitle_offset_y",
+            "logo_position",
+        )
+        for key in required:
             assert key in layout, f"Missing layout key: {key}"
 
 

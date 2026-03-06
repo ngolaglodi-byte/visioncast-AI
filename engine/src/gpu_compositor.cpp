@@ -234,28 +234,43 @@ struct GpuCompositor::Impl {
         lowerThirdLayer.opacity = 1.0f;
     }
 
-    /// Alpha-blend an RGBA overlay onto a BGRA frame (CPU path).
+    /// Alpha-blend a BGRA overlay onto a BGRA frame (CPU path).
+    /// Uses OpenCV split/merge for vectorised blending on the visible ROI.
     static void alphaBlend(cv::Mat& dst, const cv::Mat& overlay,
                            int x, int y, float opacity) {
-        for (int row = 0; row < overlay.rows; ++row) {
-            int dy = y + row;
-            if (dy < 0 || dy >= dst.rows) continue;
-            for (int col = 0; col < overlay.cols; ++col) {
-                int dx = x + col;
-                if (dx < 0 || dx >= dst.cols) continue;
+        // Compute the visible ROI (clipped to destination bounds).
+        int srcX = std::max(0, -x);
+        int srcY = std::max(0, -y);
+        int dstX = std::max(0, x);
+        int dstY = std::max(0, y);
+        int roiW = std::min(overlay.cols - srcX, dst.cols - dstX);
+        int roiH = std::min(overlay.rows - srcY, dst.rows - dstY);
+        if (roiW <= 0 || roiH <= 0) return;
 
-                const auto& src = overlay.at<cv::Vec4b>(row, col);
-                auto& dstPx     = dst.at<cv::Vec4b>(dy, dx);
+        cv::Mat srcROI = overlay(cv::Rect(srcX, srcY, roiW, roiH));
+        cv::Mat dstROI = dst(cv::Rect(dstX, dstY, roiW, roiH));
 
-                float srcA = (src[3] / 255.0f) * opacity;
-                float invA = 1.0f - srcA;
+        // Split into channels.
+        cv::Mat srcCh[4], dstCh[4];
+        cv::split(srcROI, srcCh);
+        cv::split(dstROI, dstCh);
 
-                dstPx[0] = static_cast<uint8_t>(src[0] * srcA + dstPx[0] * invA);
-                dstPx[1] = static_cast<uint8_t>(src[1] * srcA + dstPx[1] * invA);
-                dstPx[2] = static_cast<uint8_t>(src[2] * srcA + dstPx[2] * invA);
-                dstPx[3] = 255;
-            }
+        // Build normalised alpha mask [0,1].
+        cv::Mat alpha;
+        srcCh[3].convertTo(alpha, CV_32F, opacity / 255.0);
+        cv::Mat invAlpha = cv::Scalar(1.0) - alpha;
+
+        // Blend each colour channel: out = src*a + dst*(1-a).
+        for (int c = 0; c < 3; ++c) {
+            cv::Mat s, d;
+            srcCh[c].convertTo(s, CV_32F);
+            dstCh[c].convertTo(d, CV_32F);
+            cv::Mat blended = s.mul(alpha) + d.mul(invAlpha);
+            blended.convertTo(dstCh[c], CV_8U);
         }
+        dstCh[3].setTo(255);
+
+        cv::merge(dstCh, 4, dstROI);
     }
 
     /// Apply animation to a layer and return effective opacity + position.
@@ -459,10 +474,10 @@ bool GpuCompositor::isReady() const {
 // =====================================================================
 
 bool GpuCompositor::addLayer(const std::string& id,
-                              const uint8_t* rgbaData, int texW, int texH,
+                              const uint8_t* bgraData, int texW, int texH,
                               float posX, float posY, float w, float h,
                               int zOrder) {
-    if (!impl_->ready || !rgbaData || texW <= 0 || texH <= 0) return false;
+    if (!impl_->ready || !bgraData || texW <= 0 || texH <= 0) return false;
     if (impl_->findLayer(id)) return false; // duplicate
 
     CompositingLayer layer;
@@ -478,7 +493,7 @@ bool GpuCompositor::addLayer(const std::string& id,
 
     size_t bytes = static_cast<size_t>(texW) * texH * 4;
     layer.pixels.resize(bytes);
-    std::memcpy(layer.pixels.data(), rgbaData, bytes);
+    std::memcpy(layer.pixels.data(), bgraData, bytes);
 
 #ifdef HAS_OPENGL
     GLuint tex = 0;
@@ -489,7 +504,7 @@ bool GpuCompositor::addLayer(const std::string& id,
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, texW, texH, 0,
-                 GL_BGRA, GL_UNSIGNED_BYTE, rgbaData);
+                 GL_BGRA, GL_UNSIGNED_BYTE, bgraData);
     impl_->layerTextures.push_back(tex);
 #endif
 
@@ -535,15 +550,15 @@ void GpuCompositor::removeLayer(const std::string& id) {
 }
 
 bool GpuCompositor::updateLayerPixels(const std::string& id,
-                                       const uint8_t* rgbaData,
+                                       const uint8_t* bgraData,
                                        int texW, int texH) {
-    if (!rgbaData || texW <= 0 || texH <= 0) return false;
+    if (!bgraData || texW <= 0 || texH <= 0) return false;
     auto* layer = impl_->findLayer(id);
     if (!layer) return false;
 
     size_t bytes = static_cast<size_t>(texW) * texH * 4;
     layer->pixels.resize(bytes);
-    std::memcpy(layer->pixels.data(), rgbaData, bytes);
+    std::memcpy(layer->pixels.data(), bgraData, bytes);
     layer->texWidth  = texW;
     layer->texHeight = texH;
 
@@ -553,7 +568,7 @@ bool GpuCompositor::updateLayerPixels(const std::string& id,
         if (impl_->layers[i].id == id && i < impl_->layerTextures.size()) {
             glBindTexture(GL_TEXTURE_2D, impl_->layerTextures[i]);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, texW, texH, 0,
-                         GL_BGRA, GL_UNSIGNED_BYTE, rgbaData);
+                         GL_BGRA, GL_UNSIGNED_BYTE, bgraData);
             break;
         }
     }
