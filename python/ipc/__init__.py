@@ -2,6 +2,8 @@
 
 from .protocol import (
     FaceLocation,
+    Heartbeat,
+    LogMessage,
     TalentInfo,
     TalentOverlayMessage,
     RecognizedFace,
@@ -12,6 +14,8 @@ from .zmq_sender import ZmqSender
 
 __all__ = [
     "FaceLocation",
+    "Heartbeat",
+    "LogMessage",
     "TalentInfo",
     "TalentOverlayMessage",
     "RecognizedFace",
