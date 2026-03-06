@@ -173,8 +173,10 @@ void TalentManager::setupDetailPanel(QVBoxLayout* parent) {
 void TalentManager::loadDatabase(const QString& path) {
     dbPath_ = path;
     QFile file(path);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning("TalentManager: cannot open %s", qPrintable(path));
         return;
+    }
 
     QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
     file.close();
@@ -219,8 +221,10 @@ void TalentManager::saveDatabase(const QString& path) {
     root["talents"] = arr;
 
     QFile file(target);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qWarning("TalentManager: cannot write %s", qPrintable(target));
         return;
+    }
     file.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
     file.close();
 
@@ -307,8 +311,20 @@ void TalentManager::clearDetailPanel() {
 // =====================================================================
 
 void TalentManager::onAddTalent() {
+    // Generate a unique talent_id by finding the highest existing numeric suffix.
+    int maxId = 0;
+    for (int r = 0; r < model_->rowCount(); ++r) {
+        QString id = model_->item(r, 0)->text();
+        if (id.startsWith("talent_")) {
+            bool ok = false;
+            int n = id.mid(7).toInt(&ok);
+            if (ok && n > maxId)
+                maxId = n;
+        }
+    }
+
     QJsonObject obj;
-    obj["talent_id"] = QString("talent_%1").arg(model_->rowCount() + 1);
+    obj["talent_id"] = QString("talent_%1").arg(maxId + 1);
     obj["name"] = "";
     obj["role"] = "";
     obj["organization"] = "";

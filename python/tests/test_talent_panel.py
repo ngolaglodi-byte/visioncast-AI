@@ -31,13 +31,26 @@ VALID_ANIMATIONS = {
 # Helpers
 # =====================================================================
 
+_cached_talents = None
+
+
 def _load_talents():
-    """Load and return the list of talent dicts from talents.json."""
+    """Load and return the list of talent dicts from talents.json (cached)."""
+    global _cached_talents
+    if _cached_talents is not None:
+        return _cached_talents
     assert os.path.isfile(TALENTS_JSON), f"Missing {TALENTS_JSON}"
     with open(TALENTS_JSON, "r", encoding="utf-8") as f:
         data = json.load(f)
     assert "talents" in data, "talents.json must have a 'talents' key"
-    return data["talents"]
+    _cached_talents = data["talents"]
+    return _cached_talents
+
+
+@pytest.fixture(params=range(len(_load_talents())))
+def talent(request):
+    """Yield each talent entry from the database, one per test invocation."""
+    return _load_talents()[request.param]
 
 
 # =====================================================================
@@ -72,10 +85,6 @@ class TestTalentDatabase:
 
 class TestTalentSchema:
     """Validate every talent entry has the fields required by the panel."""
-
-    @pytest.fixture(params=range(len(_load_talents())))
-    def talent(self, request):
-        return _load_talents()[request.param]
 
     # --- required top-level keys ---
 
@@ -140,10 +149,6 @@ class TestTalentSchema:
 
 class TestTalentOverlayCrossRef:
     """Ensure overlay references in the talent DB point to valid templates."""
-
-    @pytest.fixture(params=range(len(_load_talents())))
-    def talent(self, request):
-        return _load_talents()[request.param]
 
     def test_overlay_is_valid_json(self, talent):
         overlay_path = os.path.join(PROJECT_ROOT, talent["overlay"])
