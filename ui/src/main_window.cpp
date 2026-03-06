@@ -3,7 +3,9 @@
 
 #include "visioncast_ui/main_window.h"
 
+#include <QApplication>
 #include <QDockWidget>
+#include <QFile>
 #include <QMenuBar>
 #include <QStatusBar>
 #include <QToolBar>
@@ -38,6 +40,11 @@ void MainWindow::setupMenuBar() {
     auto* viewMenu = menuBar()->addMenu("&View");
     viewMenu->addAction("&Multiview");
     viewMenu->addAction("&Full Screen Preview");
+    viewMenu->addSeparator();
+
+    auto* themeMenu = viewMenu->addMenu("&Theme");
+    themeMenu->addAction("&Dark", this, [this]() { onThemeSelected("Dark"); });
+    themeMenu->addAction("&Light", this, [this]() { onThemeSelected("Light"); });
 
     auto* broadcastMenu = menuBar()->addMenu("&Broadcast");
     broadcastMenu->addAction("&Go Live", this, &MainWindow::onGoLive);
@@ -113,6 +120,25 @@ void MainWindow::onEngineStartRequested(const QString& sourceName) {
 
 void MainWindow::onEngineStopRequested() {
     statusBar()->showMessage("Engine stopped");
+}
+
+void MainWindow::loadTheme(const QString& qssPath) {
+    QFile file(qssPath);
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString styleSheet = file.readAll();
+        file.close();
+        qApp->setStyleSheet(styleSheet);
+    }
+}
+
+void MainWindow::onThemeSelected(const QString& themeName) {
+    QString qssFile;
+    if (themeName == "Light")
+        qssFile = "themes/light.qss";
+    else
+        qssFile = "themes/dark.qss";
+    loadTheme(qssFile);
+    statusBar()->showMessage("Theme: " + themeName);
 }
 
 } // namespace visioncast_ui
