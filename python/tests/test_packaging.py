@@ -99,8 +99,7 @@ class TestDataInstallRules:
         assert directory in self.cmake
 
     def test_python_tests_excluded(self):
-        assert '"tests"' in self.cmake or "'tests'" in self.cmake \
-               or "tests" in self.cmake
+        assert re.search(r'PATTERN\s+"tests"\s+EXCLUDE', self.cmake)
 
     def test_pycache_excluded(self):
         assert "__pycache__" in self.cmake
