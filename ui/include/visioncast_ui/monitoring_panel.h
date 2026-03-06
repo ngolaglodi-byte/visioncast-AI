@@ -78,7 +78,8 @@ private:
     QPlainTextEdit* engineLogView_ = nullptr;
     QPlainTextEdit* zmqLogView_ = nullptr;
 
-    int maxLogLines_ = 1000;
+    static constexpr int kDefaultMaxLogLines = 1000;
+    int maxLogLines_ = kDefaultMaxLogLines;
 };
 
 } // namespace visioncast_ui

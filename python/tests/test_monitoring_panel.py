@@ -201,6 +201,10 @@ class TestMonitoringPanelHeader:
         text = _read(os.path.join(UI_INCLUDE, "monitoring_panel.h"))
         assert "createMetricsTab()" in text
 
+    def test_has_default_max_log_lines_constant(self):
+        text = _read(os.path.join(UI_INCLUDE, "monitoring_panel.h"))
+        assert "kDefaultMaxLogLines" in text
+
     def test_has_create_log_tab(self):
         text = _read(os.path.join(UI_INCLUDE, "monitoring_panel.h"))
         assert "createLogTab(" in text
@@ -452,3 +456,13 @@ class TestLogMessageProtocol:
         assert "INFO" in LogMessage.VALID_LEVELS
         assert "WARNING" in LogMessage.VALID_LEVELS
         assert "ERROR" in LogMessage.VALID_LEVELS
+
+    def test_log_message_rejects_invalid_source(self):
+        from ipc.protocol import LogMessage
+        with pytest.raises(ValueError, match="Invalid source"):
+            LogMessage(source="unknown", message="test")
+
+    def test_log_message_rejects_invalid_level(self):
+        from ipc.protocol import LogMessage
+        with pytest.raises(ValueError, match="Invalid level"):
+            LogMessage(source="ai", level="CRITICAL", message="test")

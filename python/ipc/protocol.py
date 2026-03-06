@@ -170,6 +170,18 @@ class LogMessage:
     VALID_SOURCES = ("ai", "engine", "zmq")
     VALID_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR")
 
+    def __post_init__(self):
+        if self.source not in self.VALID_SOURCES:
+            raise ValueError(
+                f"Invalid source {self.source!r}, "
+                f"must be one of {self.VALID_SOURCES}"
+            )
+        if self.level not in self.VALID_LEVELS:
+            raise ValueError(
+                f"Invalid level {self.level!r}, "
+                f"must be one of {self.VALID_LEVELS}"
+            )
+
     def to_json(self) -> str:
         """Serialize to JSON string for ZeroMQ transmission."""
         return json.dumps({
