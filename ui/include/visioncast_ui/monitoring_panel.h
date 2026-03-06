@@ -53,6 +53,10 @@ public:
     int maxLogLines() const;
     void setMaxLogLines(int maxLines);
 
+signals:
+    /// Emitted periodically to request updated system metrics.
+    void metricsRequested();
+
 private:
     QWidget* createMetricsTab();
     QWidget* createLogTab(QPlainTextEdit*& logView);

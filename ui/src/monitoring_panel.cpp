@@ -30,6 +30,8 @@ MonitoringPanel::MonitoringPanel(QWidget* parent)
 
     refreshTimer_ = new QTimer(this);
     refreshTimer_->setInterval(1000); // Refresh every second
+    connect(refreshTimer_, &QTimer::timeout, this, &MonitoringPanel::metricsRequested);
+    refreshTimer_->start();
 
     setLayout(mainLayout);
 }
@@ -49,8 +51,16 @@ QWidget* MonitoringPanel::createMetricsTab() {
     gpuBar_ = new QProgressBar(widget);
     gpuBar_->setRange(0, 100);
 
-    layout->addRow("CPU:", cpuBar_);
-    layout->addRow("GPU:", gpuBar_);
+    auto* cpuRow = new QHBoxLayout();
+    cpuRow->addWidget(cpuBar_);
+    cpuRow->addWidget(cpuLabel_);
+    layout->addRow("CPU:", cpuRow);
+
+    auto* gpuRow = new QHBoxLayout();
+    gpuRow->addWidget(gpuBar_);
+    gpuRow->addWidget(gpuLabel_);
+    layout->addRow("GPU:", gpuRow);
+
     layout->addRow("Latency:", latencyLabel_);
     layout->addRow("FPS:", fpsLabel_);
     layout->addRow("Dropped Frames:", droppedFramesLabel_);
@@ -80,6 +90,8 @@ QWidget* MonitoringPanel::createLogTab(QPlainTextEdit*& logView) {
 void MonitoringPanel::updateMetrics(const SystemMetrics& metrics) {
     cpuBar_->setValue(static_cast<int>(metrics.cpuUsage));
     gpuBar_->setValue(static_cast<int>(metrics.gpuUsage));
+    cpuLabel_->setText(QString::number(metrics.cpuUsage, 'f', 1) + "%");
+    gpuLabel_->setText(QString::number(metrics.gpuUsage, 'f', 1) + "%");
     latencyLabel_->setText(QString::number(metrics.latencyMs, 'f', 1) + " ms");
     fpsLabel_->setText(QString::number(metrics.fps, 'f', 1) + " fps");
     droppedFramesLabel_->setText(QString::number(metrics.droppedFrames));
