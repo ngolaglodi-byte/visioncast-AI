@@ -88,6 +88,52 @@ class TestDesignPanelHeader:
         text = _read(os.path.join(UI_INCLUDE, "design_panel.h"))
         assert "lowerThirdApplied(" in text
 
+    def test_has_set_lower_third_duration(self):
+        text = _read(os.path.join(UI_INCLUDE, "design_panel.h"))
+        assert "setLowerThirdDuration(" in text
+
+    def test_has_lower_third_duration_getter(self):
+        text = _read(os.path.join(UI_INCLUDE, "design_panel.h"))
+        assert "lowerThirdDuration()" in text
+
+    # -- Video Filters ------------------------------------------------
+
+    def test_has_is_video_filter_enabled(self):
+        text = _read(os.path.join(UI_INCLUDE, "design_panel.h"))
+        assert "isVideoFilterEnabled(" in text
+
+    def test_has_set_video_filter_enabled(self):
+        text = _read(os.path.join(UI_INCLUDE, "design_panel.h"))
+        assert "setVideoFilterEnabled(" in text
+
+    def test_has_video_filters_changed_signal(self):
+        text = _read(os.path.join(UI_INCLUDE, "design_panel.h"))
+        assert "videoFiltersChanged()" in text
+
+    def test_has_create_video_filters_tab(self):
+        text = _read(os.path.join(UI_INCLUDE, "design_panel.h"))
+        assert "createVideoFiltersTab()" in text
+
+    def test_has_filter_checkboxes(self):
+        text = _read(os.path.join(UI_INCLUDE, "design_panel.h"))
+        assert "filterCinemaLutCheck_" in text
+        assert "filterSharpenCheck_" in text
+        assert "filterNoiseReductionCheck_" in text
+        assert "filterHdrTonemapCheck_" in text
+        assert "filterDynamicContrastCheck_" in text
+
+    def test_has_lower_third_duration_spin(self):
+        text = _read(os.path.join(UI_INCLUDE, "design_panel.h"))
+        assert "lowerThirdDurationSpin_" in text
+
+    def test_forward_declares_qcheckbox(self):
+        text = _read(os.path.join(UI_INCLUDE, "design_panel.h"))
+        assert "QCheckBox" in text
+
+    def test_forward_declares_qdoublespinbox(self):
+        text = _read(os.path.join(UI_INCLUDE, "design_panel.h"))
+        assert "QDoubleSpinBox" in text
+
     # -- Templates ----------------------------------------------------
 
     def test_has_current_template_name(self):
@@ -270,6 +316,42 @@ class TestDesignPanelSource:
         text = _read(os.path.join(UI_SRC, "design_panel.cpp"))
         assert "createTransitionsTab" in text
 
+    def test_source_creates_video_filters_tab(self):
+        text = _read(os.path.join(UI_SRC, "design_panel.cpp"))
+        assert "createVideoFiltersTab" in text
+
+    def test_source_has_set_lower_third_duration(self):
+        text = _read(os.path.join(UI_SRC, "design_panel.cpp"))
+        assert "DesignPanel::setLowerThirdDuration" in text
+
+    def test_source_has_lower_third_duration_getter(self):
+        text = _read(os.path.join(UI_SRC, "design_panel.cpp"))
+        assert "DesignPanel::lowerThirdDuration" in text
+
+    def test_source_has_is_video_filter_enabled(self):
+        text = _read(os.path.join(UI_SRC, "design_panel.cpp"))
+        assert "DesignPanel::isVideoFilterEnabled" in text
+
+    def test_source_has_set_video_filter_enabled(self):
+        text = _read(os.path.join(UI_SRC, "design_panel.cpp"))
+        assert "DesignPanel::setVideoFilterEnabled" in text
+
+    def test_source_has_display_duration_label(self):
+        text = _read(os.path.join(UI_SRC, "design_panel.cpp"))
+        assert "Display duration (seconds):" in text
+
+    def test_source_has_video_filters_tab_label(self):
+        text = _read(os.path.join(UI_SRC, "design_panel.cpp"))
+        assert '"Video Filters"' in text
+
+    def test_source_includes_qcheckbox(self):
+        text = _read(os.path.join(UI_SRC, "design_panel.cpp"))
+        assert "<QCheckBox>" in text
+
+    def test_source_includes_qdoublespinbox(self):
+        text = _read(os.path.join(UI_SRC, "design_panel.cpp"))
+        assert "<QDoubleSpinBox>" in text
+
 
 # =====================================================================
 # CMakeLists.txt integration
@@ -361,3 +443,26 @@ class TestDesignConfig:
         logo = config_data["logo"]
         assert "path" in logo
         assert "position" in logo
+
+    def test_has_video_filters_section(self, config_data):
+        assert "video_filters" in config_data
+
+    def test_video_filters_has_all_filters(self, config_data):
+        vf = config_data["video_filters"]
+        for name in ("cinema_lut", "sharpen", "noise_reduction",
+                      "hdr_tonemap", "dynamic_contrast"):
+            assert name in vf, f"Missing video filter: {name}"
+
+    def test_video_filters_are_booleans(self, config_data):
+        vf = config_data["video_filters"]
+        for name, val in vf.items():
+            assert isinstance(val, bool), f"{name} should be bool"
+
+    def test_lower_thirds_has_display_duration(self, config_data):
+        lt = config_data["lower_thirds"]
+        assert "display_duration_s" in lt
+
+    def test_display_duration_is_positive_number(self, config_data):
+        val = config_data["lower_thirds"]["display_duration_s"]
+        assert isinstance(val, (int, float))
+        assert val > 0

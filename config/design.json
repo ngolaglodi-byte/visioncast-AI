@@ -2,7 +2,8 @@
   "lower_thirds": {
     "default_title": "",
     "default_subtitle": "",
-    "style": "default"
+    "style": "default",
+    "display_duration_s": 5.0
   },
   "templates": {
     "available": ["default", "modern_blue", "minimal"],
@@ -23,5 +24,12 @@
   "transitions": {
     "type": "fade",
     "duration_ms": 500
+  },
+  "video_filters": {
+    "cinema_lut": false,
+    "sharpen": false,
+    "noise_reduction": false,
+    "hdr_tonemap": false,
+    "dynamic_contrast": false
   }
 }
