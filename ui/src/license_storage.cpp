@@ -85,7 +85,8 @@ bool LicenseStorage::save(const QString& path,
 // ── Helpers ─────────────────────────────────────────────────────────
 
 QByteArray LicenseStorage::xorObfuscate(const QByteArray& data) const {
-    QByteArray result(data.size(), '\0');
+    QByteArray result;
+    result.resize(data.size());
     for (int i = 0; i < data.size(); ++i)
         result[i] = data[i] ^ xorKey_[i % xorKey_.size()];
     return result;

@@ -5,12 +5,13 @@
 
 #include <QDateTime>
 #include <QFile>
+#include <QGlobalStatic>
 #include <QMutex>
 #include <QTextStream>
 
-namespace visioncast_ui {
+Q_GLOBAL_STATIC(QMutex, s_logMutex)
 
-static QMutex s_logMutex;
+namespace visioncast_ui {
 
 void LicenseSecureLogger::logValidation(const QString& status) {
     write(QStringLiteral("VALIDATION"), QStringLiteral("status=") + status);
@@ -30,7 +31,7 @@ void LicenseSecureLogger::logInfo(const QString& message) {
 
 void LicenseSecureLogger::write(const QString& category,
                                 const QString& message) {
-    QMutexLocker lock(&s_logMutex);
+    QMutexLocker lock(s_logMutex());
     QFile file(QStringLiteral("license_secure.log"));
     if (!file.open(QIODevice::Append | QIODevice::Text))
         return;

@@ -50,6 +50,7 @@ public:
     // ── Helpers ─────────────────────────────────────────────────────
 
     /// XOR-obfuscate @p data with a key derived from the machine ID.
+    /// XOR is symmetric — the same function encrypts and decrypts.
     QByteArray xorObfuscate(const QByteArray& data) const;
 
     /// Compute the SHA-256 integrity hash for the given fields.

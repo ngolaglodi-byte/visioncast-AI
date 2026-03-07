@@ -307,8 +307,11 @@ void LicenseManager::refreshOfflineDeadline() {
 void LicenseManager::persistLicenseDat() const {
     if (licenseKey_.isEmpty())
         return;
-    storage_->save(QLatin1String(kLicenseDatPath),
-                   licenseKey_, offlineValidUntil_);
+    if (!storage_->save(QLatin1String(kLicenseDatPath),
+                        licenseKey_, offlineValidUntil_)) {
+        LicenseSecureLogger::logError(
+            QStringLiteral("Failed to persist license.dat"));
+    }
 }
 
 } // namespace visioncast_ui
