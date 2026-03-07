@@ -27,6 +27,7 @@ set(UI_SOURCES
     src/control_room.cpp
     src/design_panel.cpp
     src/recognition_panel.cpp
+    src/device_scanner.cpp
 )
 
 add_executable(visioncast_ui ${UI_SOURCES})
@@ -34,17 +35,20 @@ add_executable(visioncast_ui ${UI_SOURCES})
 target_include_directories(visioncast_ui
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/sdk/include
 )
 
 if(Qt6_FOUND)
     target_link_libraries(visioncast_ui PRIVATE
         Qt6::Widgets Qt6::Core Qt6::Gui
         visioncast_engine_lib
+        visioncast_sdk
     )
 else()
     target_link_libraries(visioncast_ui PRIVATE
         Qt5::Widgets Qt5::Core Qt5::Gui
         visioncast_engine_lib
+        visioncast_sdk
     )
 endif()
 
