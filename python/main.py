@@ -47,7 +47,9 @@ def load_talents(path):
     except (json.JSONDecodeError, KeyError) as exc:
         logger.error("Failed to parse talents.json: %s. Starting with empty talent list.", exc)
     except Exception as exc:
-        logger.error("Unexpected error loading talents.json: %s. Starting with empty talent list.", exc)
+        logger.error(
+            "Unexpected error loading talents.json: %s. Starting with empty talent list.", exc
+        )
     return []
 
 
@@ -139,7 +141,10 @@ def run():
                         MAX_READ_FAILURES,
                     )
                     break
-                logger.warning("Failed to read frame (attempt %d). Retrying...", _consecutive_read_failures)
+                logger.warning(
+                    "Failed to read frame (attempt %d). Retrying...",
+                    _consecutive_read_failures,
+                )
                 time.sleep(0.1)
                 continue
 
