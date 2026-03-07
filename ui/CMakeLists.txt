@@ -33,7 +33,7 @@ set(UI_SOURCES
     src/license_config.cpp
     src/license_secure_logger.cpp
     src/license_storage.cpp
-    resources/visioncast.qrc
+    src/python_launcher.cpp
 )
 
 # --- Windows: embed icon into the executable via .rc ---
