@@ -5,7 +5,6 @@ directives required to generate Windows (NSIS) and macOS (DMG/productbuild)
 installers that bundle every VisionCast module.
 """
 
-import os
 import re
 import pathlib
 import pytest

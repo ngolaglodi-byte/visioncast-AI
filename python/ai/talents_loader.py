@@ -10,10 +10,9 @@ Provides fast, resilient loading of the talent database with:
 import hashlib
 import json
 import os
-import struct
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 
