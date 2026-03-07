@@ -450,7 +450,7 @@ class TestDesignConfig:
     def test_video_filters_has_all_filters(self, config_data):
         vf = config_data["video_filters"]
         for name in ("cinema_lut", "sharpen", "noise_reduction",
-                      "hdr_tonemap", "dynamic_contrast"):
+                     "hdr_tonemap", "dynamic_contrast"):
             assert name in vf, f"Missing video filter: {name}"
 
     def test_video_filters_are_booleans(self, config_data):

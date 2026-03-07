@@ -6,7 +6,6 @@ import time
 import cv2
 import face_recognition
 import json
-import numpy as np
 
 # ---------------------------------------------------------------------------
 # Logging

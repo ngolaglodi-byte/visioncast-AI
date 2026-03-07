@@ -5,7 +5,7 @@ skip-frame reuse, and region-of-interest tracking for real-time
 multi-person detection in video streams.
 """
 
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import numpy as np
 
