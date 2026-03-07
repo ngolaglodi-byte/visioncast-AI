@@ -18,6 +18,7 @@
 #include "visioncast_ui/control_room.h"
 #include "visioncast_ui/design_panel.h"
 #include "visioncast_ui/recognition_panel.h"
+#include "visioncast_ui/device_scanner.h"
 
 namespace visioncast_ui {
 
@@ -90,6 +91,9 @@ void MainWindow::setupDockWidgets() {
             this, &MainWindow::onEngineStartRequested);
     connect(controlRoom_, &ControlRoom::engineStopRequested,
             this, &MainWindow::onEngineStopRequested);
+
+    // Populate the Control Room source list with real hardware devices.
+    controlRoom_->setSources(scanAllDevices());
 }
 
 QDockWidget* MainWindow::createDock(const QString& title, QWidget* widget) {
