@@ -12,6 +12,7 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QStatusBar>
+#include <QTimer>
 #include <QToolBar>
 
 #include "visioncast_ui/monitoring_panel.h"
@@ -34,22 +35,43 @@ MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , licenseManager_(new LicenseManager(this))
 {
-    // Try loading API credentials from environment variables first.
+    // ── 1. Load API configuration (priority: env vars > config file > compiled defaults) ──
     if (!licenseManager_->loadFromEnvironment()) {
-        // Fallback to config file.
-        if (!licenseManager_->loadConfig(
-                QStringLiteral("config/license.json")))
-            qWarning("License config not loaded – check environment "
-                     "variables or config/license.json");
+        if (!licenseManager_->loadConfig(QStringLiteral("config/license.json"))
+            || licenseManager_->apiUrl().isEmpty()) {
+            // Use compiled-in defaults — no user configuration needed.
+            licenseManager_->setApiUrl(visioncast_ui::defaultApiUrl());
+            licenseManager_->setApiKey(visioncast_ui::defaultApiKey());
+        }
     }
 
     // Connect the blocking signal before any validation.
     connect(licenseManager_, &LicenseManager::licenseBlocked,
             this, &MainWindow::onLicenseBlocked);
 
+    // ── 2. Check license before showing the main UI ──
+    // Try to validate an existing cached license (from license.dat or config).
+    bool hasValidLicense = false;
+
+    if (!licenseManager_->licenseKey().isEmpty()) {
+        // We have a cached key — try offline grace first (instant, no network).
+        hasValidLicense = licenseManager_->tryOfflineGrace();
+    }
+
+    if (!hasValidLicense) {
+        // No valid license found — show the activation dialog immediately.
+        // This is MODAL and BLOCKING: the user MUST activate before proceeding.
+        if (!showFirstRunLicenseActivation()) {
+            // User closed the dialog without activating — quit.
+            QTimer::singleShot(0, qApp, &QApplication::quit);
+            return;
+        }
+    }
+
+    // ── 3. License is valid — set up the full UI ──
     setupMenuBar();
     setupDockWidgets();
-    statusBar()->showMessage("Ready");
+    statusBar()->showMessage("Ready — License active");
 
     // Silently validate cached license key on startup.
     if (!licenseManager_->licenseKey().isEmpty())

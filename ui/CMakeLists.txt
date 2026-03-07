@@ -36,7 +36,25 @@ set(UI_SOURCES
     src/python_launcher.cpp
 )
 
+# --- Windows: embed icon into the executable via .rc ---
+if(WIN32)
+    list(APPEND UI_SOURCES ${CMAKE_SOURCE_DIR}/packaging/icons/visioncast.rc)
+endif()
+
 add_executable(visioncast_ui ${UI_SOURCES})
+
+# --- macOS: attach .icns to the application bundle ---
+if(APPLE)
+    set(APP_ICON_MACOS ${CMAKE_SOURCE_DIR}/packaging/icons/visioncast.icns)
+    if(EXISTS ${APP_ICON_MACOS})
+        set_source_files_properties(${APP_ICON_MACOS} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+        target_sources(visioncast_ui PRIVATE ${APP_ICON_MACOS})
+    endif()
+    set_target_properties(visioncast_ui PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_ICON_FILE visioncast.icns
+    )
+endif()
 
 target_include_directories(visioncast_ui
     PRIVATE
@@ -56,6 +74,17 @@ else()
         visioncast_engine_lib
         visioncast_sdk
     )
+endif()
+
+# --- License API defaults (can be overridden at build time) ---
+# Usage: cmake -DVISIONCAST_LICENSE_API_URL="https://..." -DVISIONCAST_LICENSE_API_KEY="..."
+if(DEFINED VISIONCAST_LICENSE_API_URL)
+    target_compile_definitions(visioncast_ui PRIVATE
+        VISIONCAST_LICENSE_API_URL="${VISIONCAST_LICENSE_API_URL}")
+endif()
+if(DEFINED VISIONCAST_LICENSE_API_KEY)
+    target_compile_definitions(visioncast_ui PRIVATE
+        VISIONCAST_LICENSE_API_KEY="${VISIONCAST_LICENSE_API_KEY}")
 endif()
 
 # --- Install Rules ---
