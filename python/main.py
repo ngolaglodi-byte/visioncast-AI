@@ -113,7 +113,7 @@ def run():
     """Main capture and recognition loop."""
     _lower_third_timers = {}
     _consecutive_read_failures = 0
-    _MAX_READ_FAILURES = 30
+    MAX_READ_FAILURES = 30
 
     try:
         cap = cv2.VideoCapture(0)
@@ -133,10 +133,10 @@ def run():
             ret, frame = cap.read()
             if not ret:
                 _consecutive_read_failures += 1
-                if _consecutive_read_failures >= _MAX_READ_FAILURES:
+                if _consecutive_read_failures >= MAX_READ_FAILURES:
                     logger.error(
                         "Failed to read frame %d times in a row. Stopping.",
-                        _MAX_READ_FAILURES,
+                        MAX_READ_FAILURES,
                     )
                     break
                 logger.warning("Failed to read frame (attempt %d). Retrying...", _consecutive_read_failures)
