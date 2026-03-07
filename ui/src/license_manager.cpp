@@ -1,8 +1,14 @@
 /// @file license_manager.cpp
 /// @brief LicenseManager implementation – communicates with the remote
-///        Supabase Edge Function licensing API.
+///        licensing API and supports offline grace mode.
+///
+/// VisionCast-AI — Licence officielle Prestige Technologie Company,
+/// développée par Glody Dimputu Ngola.
 
 #include "visioncast_ui/license_manager.h"
+#include "visioncast_ui/license_config.h"
+#include "visioncast_ui/license_secure_logger.h"
+#include "visioncast_ui/license_storage.h"
 
 #include <QCoreApplication>
 #include <QCryptographicHash>
@@ -22,6 +28,7 @@ LicenseManager::LicenseManager(QObject* parent)
     : QObject(parent)
     , machineId_(generateMachineId())
     , networkManager_(new QNetworkAccessManager(this))
+    , storage_(new LicenseStorage(machineId_))
 {
     connect(networkManager_, &QNetworkAccessManager::finished,
             this, &LicenseManager::onReplyFinished);
@@ -58,6 +65,16 @@ bool LicenseManager::saveConfig(const QString& configPath) const {
         return false;
     file.write(QJsonDocument(obj).toJson(QJsonDocument::Indented));
     file.close();
+    return true;
+}
+
+bool LicenseManager::loadFromEnvironment() {
+    if (!LicenseConfig::load())
+        return false;
+    apiUrl_ = LicenseConfig::apiUrl();
+    apiKey_ = LicenseConfig::apiKey();
+    LicenseSecureLogger::logInfo(
+        QStringLiteral("Configuration loaded from environment variables"));
     return true;
 }
 
@@ -118,6 +135,60 @@ void LicenseManager::checkStatus(const QString& licenseKey) {
     sendRequest(payload, QStringLiteral("check_status"));
 }
 
+// ── Offline Grace Mode ──────────────────────────────────────────────
+
+bool LicenseManager::tryOfflineGrace() {
+    if (!storage_->load(QLatin1String(kLicenseDatPath)))
+        return false;
+
+    if (storage_->isTampered()) {
+        LicenseSecureLogger::logError(
+            QStringLiteral("license.dat tampered — offline grace denied"));
+        status_ = LicenseStatus::Invalid;
+        return false;
+    }
+
+    licenseKey_        = storage_->licenseKey();
+    offlineValidUntil_ = storage_->offlineValidUntil();
+
+    if (QDateTime::currentDateTimeUtc() <= offlineValidUntil_) {
+        status_ = LicenseStatus::Valid;
+        LicenseSecureLogger::logOfflineModeEnabled();
+        emit offlineModeActivated();
+        return true;
+    }
+
+    LicenseSecureLogger::logError(
+        QStringLiteral("offline grace period expired"));
+    status_ = LicenseStatus::Expired;
+    return false;
+}
+
+QDateTime LicenseManager::offlineValidUntil() const {
+    return offlineValidUntil_;
+}
+
+// ── Blocking Check ──────────────────────────────────────────────────
+
+bool LicenseManager::shouldBlockApplication() const {
+    return status_ == LicenseStatus::Invalid
+        || status_ == LicenseStatus::Expired
+        || status_ == LicenseStatus::Suspended;
+}
+
+QString LicenseManager::blockReason() const {
+    switch (status_) {
+    case LicenseStatus::Invalid:
+        return tr("Licence invalide — VisionCast-AI ne peut pas démarrer.");
+    case LicenseStatus::Expired:
+        return tr("Licence expirée — VisionCast-AI ne peut pas démarrer.");
+    case LicenseStatus::Suspended:
+        return tr("Licence suspendue — VisionCast-AI ne peut pas démarrer.");
+    default:
+        return {};
+    }
+}
+
 // ── Current State ───────────────────────────────────────────────────
 
 LicenseManager::LicenseStatus LicenseManager::status() const {
@@ -136,8 +207,8 @@ void LicenseManager::sendRequest(const QJsonObject& payload,
                                  const QString& action) {
     if (apiUrl_.isEmpty() || apiKey_.isEmpty()) {
         emit networkError(tr("License API is not configured. "
-                             "Please set api_url and api_key in "
-                             "config/license.json."));
+                             "Please set LICENSE_API_URL and LICENSE_API_KEY "
+                             "environment variables."));
         return;
     }
 
@@ -156,6 +227,7 @@ void LicenseManager::onReplyFinished(QNetworkReply* reply) {
     reply->deleteLater();
 
     if (reply->error() != QNetworkReply::NoError) {
+        LicenseSecureLogger::logError(reply->errorString());
         emit networkError(reply->errorString());
         return;
     }
@@ -183,16 +255,28 @@ void LicenseManager::onReplyFinished(QNetworkReply* reply) {
         if (success) {
             licenseKey_ = obj.value("key").toString(licenseKey_);
             status_ = LicenseStatus::Valid;
+            refreshOfflineDeadline();
+            LicenseSecureLogger::logValidation(QStringLiteral("active"));
             emit activationSucceeded(msg);
         } else {
             status_ = LicenseStatus::Invalid;
+            LicenseSecureLogger::logError(msg);
             emit activationFailed(msg);
         }
     } else if (pendingAction_ == "validate_key") {
         LicenseStatus st = mapStatus(obj.value("status").toString());
         const bool valid = success && st == LicenseStatus::Valid;
         status_ = valid ? LicenseStatus::Valid : st;
+        LicenseSecureLogger::logValidation(
+            obj.value("status").toString(QStringLiteral("unknown")));
+        if (valid)
+            refreshOfflineDeadline();
         emit validationCompleted(valid, msg);
+
+        if (shouldBlockApplication()) {
+            LicenseSecureLogger::logError(blockReason());
+            emit licenseBlocked(blockReason());
+        }
     } else if (pendingAction_ == "deactivate_key") {
         if (success) {
             status_ = LicenseStatus::Unknown;
@@ -210,6 +294,21 @@ void LicenseManager::onReplyFinished(QNetworkReply* reply) {
     }
 
     pendingAction_.clear();
+}
+
+// ── Private Helpers ─────────────────────────────────────────────────
+
+void LicenseManager::refreshOfflineDeadline() {
+    offlineValidUntil_ = QDateTime::currentDateTimeUtc().addDays(
+        kOfflineGraceDays);
+    persistLicenseDat();
+}
+
+void LicenseManager::persistLicenseDat() const {
+    if (licenseKey_.isEmpty())
+        return;
+    storage_->save(QLatin1String(kLicenseDatPath),
+                   licenseKey_, offlineValidUntil_);
 }
 
 } // namespace visioncast_ui

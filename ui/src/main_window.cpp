@@ -1,5 +1,8 @@
 /// @file main_window.cpp
 /// @brief MainWindow implementation.
+///
+/// VisionCast-AI — Licence officielle Prestige Technologie Company,
+/// développée par Glody Dimputu Ngola.
 
 #include "visioncast_ui/main_window.h"
 
@@ -7,6 +10,7 @@
 #include <QDockWidget>
 #include <QFile>
 #include <QMenuBar>
+#include <QMessageBox>
 #include <QStatusBar>
 #include <QToolBar>
 
@@ -20,6 +24,7 @@
 #include "visioncast_ui/recognition_panel.h"
 #include "visioncast_ui/device_scanner.h"
 #include "visioncast_ui/license_manager.h"
+#include "visioncast_ui/license_config.h"
 #include "visioncast_ui/license_dialog.h"
 
 namespace visioncast_ui {
@@ -28,8 +33,18 @@ MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , licenseManager_(new LicenseManager(this))
 {
-    if (!licenseManager_->loadConfig(QStringLiteral("config/license.json")))
-        qWarning("License config not loaded – check config/license.json");
+    // Try loading API credentials from environment variables first.
+    if (!licenseManager_->loadFromEnvironment()) {
+        // Fallback to config file.
+        if (!licenseManager_->loadConfig(
+                QStringLiteral("config/license.json")))
+            qWarning("License config not loaded – check environment "
+                     "variables or config/license.json");
+    }
+
+    // Connect the blocking signal before any validation.
+    connect(licenseManager_, &LicenseManager::licenseBlocked,
+            this, &MainWindow::onLicenseBlocked);
 
     setupMenuBar();
     setupDockWidgets();
@@ -64,6 +79,7 @@ void MainWindow::setupMenuBar() {
 
     auto* helpMenu = menuBar()->addMenu("&Help");
     helpMenu->addAction("&Manage License…", this, &MainWindow::onManageLicense);
+    helpMenu->addAction("À &propos…", this, &MainWindow::onAbout);
 }
 
 void MainWindow::setupDockWidgets() {
@@ -167,6 +183,24 @@ void MainWindow::onManageLicense() {
     // Persist any changes made via the dialog.
     if (!licenseManager_->saveConfig(QStringLiteral("config/license.json")))
         statusBar()->showMessage("Warning: could not save license config");
+}
+
+void MainWindow::onAbout() {
+    QMessageBox::about(this, tr("À propos de VisionCast-AI"),
+        tr("VisionCast-AI — Licence officielle Prestige Technologie "
+           "Company, développée par Glody Dimputu Ngola.\n\n"
+           "Système de production broadcast alimenté par l'IA."));
+}
+
+void MainWindow::onLicenseBlocked(const QString& reason) {
+    showLicenseBlockScreen(reason);
+}
+
+void MainWindow::showLicenseBlockScreen(const QString& reason) {
+    QMessageBox::critical(this,
+        tr("Licence invalide — VisionCast-AI ne peut pas démarrer."),
+        reason);
+    QApplication::quit();
 }
 
 } // namespace visioncast_ui

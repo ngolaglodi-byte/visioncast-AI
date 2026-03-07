@@ -2,6 +2,16 @@
 
 AI-powered live broadcast production system with real-time face recognition, automatic lower-third overlays, and multi-camera management.
 
+> **VisionCast-AI — Licence officielle Prestige Technologie Company, développée par Glody Dimputu Ngola.**
+
+## ⚠ Security Notice
+
+**Ne jamais exposer la clé API Supabase dans le code public.**
+
+All sensitive credentials (API URLs, API keys) must be provided via
+environment variables.  See the [Environment Variables](#environment-variables)
+section below.
+
 ## Project Structure
 
 ```
@@ -35,6 +45,23 @@ visioncast-ai/
 - OpenCV 4.8+
 - Qt 5.15+ or Qt 6.x
 - dlib / face_recognition
+
+### Environment Variables
+
+Before running VisionCast-AI, set the following environment variables.
+Copy `.env.example` to `.env` and fill in your credentials:
+
+```bash
+cp .env.example .env
+# Edit .env with your real values
+```
+
+| Variable          | Description                         |
+|-------------------|-------------------------------------|
+| `LICENSE_API_URL` | URL of the license validation API   |
+| `LICENSE_API_KEY` | API key (bearer/anon) for the API   |
+
+> ⚠ **Never commit `.env` or real credentials to version control.**
 
 ### Installation
 
