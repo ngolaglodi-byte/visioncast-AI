@@ -2,6 +2,9 @@
 
 /// @file main_window.h
 /// @brief Main application window with dockable panels.
+///
+/// VisionCast-AI — Licence officielle Prestige Technologie Company,
+/// développée par Glody Dimputu Ngola.
 
 #include <QMainWindow>
 
@@ -38,6 +41,8 @@ private slots:
     void onEngineStopRequested();
     void onThemeSelected(const QString& themeName);
     void onManageLicense();
+    void onAbout();
+    void onLicenseBlocked(const QString& reason);
 
 private:
     PreviewPanel* previewPanel_ = nullptr;
@@ -53,6 +58,9 @@ private:
     void setupMenuBar();
     void setupDockWidgets();
     QDockWidget* createDock(const QString& title, QWidget* widget);
+
+    /// Show a blocking error dialog and exit the application.
+    void showLicenseBlockScreen(const QString& reason);
 };
 
 } // namespace visioncast_ui

@@ -30,6 +30,9 @@ set(UI_SOURCES
     src/device_scanner.cpp
     src/license_manager.cpp
     src/license_dialog.cpp
+    src/license_config.cpp
+    src/license_secure_logger.cpp
+    src/license_storage.cpp
 )
 
 add_executable(visioncast_ui ${UI_SOURCES})

@@ -1,10 +1,15 @@
 #pragma once
 
 /// @file license_manager.h
-/// @brief License management via Supabase Edge Function API.
+/// @brief License management with offline grace mode, encrypted storage,
+///        and environment-variable-based configuration.
+///
+/// VisionCast-AI — Licence officielle Prestige Technologie Company,
+/// développée par Glody Dimputu Ngola.
 
 #include <QObject>
 #include <QString>
+#include <QDateTime>
 #include <QJsonObject>
 
 class QNetworkAccessManager;
@@ -12,8 +17,11 @@ class QNetworkReply;
 
 namespace visioncast_ui {
 
+class LicenseStorage;
+
 /// Manages license activation, validation, and status checks against a
-/// remote licensing API (Supabase Edge Function).
+/// remote licensing API.  Supports offline grace mode (TTL) and blocks
+/// the application when the licence is invalid, expired, or suspended.
 class LicenseManager : public QObject {
     Q_OBJECT
 
@@ -28,6 +36,12 @@ public:
     };
     Q_ENUM(LicenseStatus)
 
+    /// Default offline grace period in days.
+    static constexpr int kOfflineGraceDays = 7;
+
+    /// Path to the encrypted local licence file.
+    static constexpr const char* kLicenseDatPath = "license.dat";
+
     explicit LicenseManager(QObject* parent = nullptr);
 
     // ── Configuration ──────────────────────────────────────────────
@@ -38,6 +52,10 @@ public:
 
     /// Persist the current license key back to the configuration file.
     bool saveConfig(const QString& configPath) const;
+
+    /// Load API URL and key from environment variables
+    /// (LICENSE_API_URL, LICENSE_API_KEY).
+    bool loadFromEnvironment();
 
     void setApiUrl(const QString& url);
     QString apiUrl() const;
@@ -62,6 +80,23 @@ public:
 
     /// Query the current status of a license key.
     void checkStatus(const QString& licenseKey);
+
+    // ── Offline Grace Mode ─────────────────────────────────────────
+
+    /// Try to authorize via the locally stored offline grace period.
+    /// @return true if the current date is within the offline window.
+    bool tryOfflineGrace();
+
+    /// @return The offline-valid-until deadline from the local store.
+    QDateTime offlineValidUntil() const;
+
+    // ── Blocking Check ─────────────────────────────────────────────
+
+    /// @return true if the current status should block application start.
+    bool shouldBlockApplication() const;
+
+    /// @return A user-facing message explaining why the app is blocked.
+    QString blockReason() const;
 
     // ── Current State ──────────────────────────────────────────────
 
@@ -89,12 +124,24 @@ signals:
     /// Emitted on any transport-level error (timeout, DNS, TLS …).
     void networkError(const QString& error);
 
+    /// Emitted when the licence state requires the application to quit.
+    void licenseBlocked(const QString& reason);
+
+    /// Emitted when offline grace mode has been activated.
+    void offlineModeActivated();
+
 private slots:
     void onReplyFinished(QNetworkReply* reply);
 
 private:
     void sendRequest(const QJsonObject& payload, const QString& action);
     static QString generateMachineId();
+
+    /// Refresh the offline deadline after a successful server validation.
+    void refreshOfflineDeadline();
+
+    /// Persist the encrypted licence to disk.
+    void persistLicenseDat() const;
 
     QString apiUrl_;
     QString apiKey_;
@@ -104,6 +151,9 @@ private:
 
     QNetworkAccessManager* networkManager_ = nullptr;
     QString pendingAction_;
+
+    QDateTime offlineValidUntil_;
+    LicenseStorage* storage_ = nullptr;
 };
 
 } // namespace visioncast_ui

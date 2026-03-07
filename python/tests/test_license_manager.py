@@ -5,7 +5,12 @@ Validates that:
 - config/license.json conforms to the expected schema,
 - The C++ LicenseManager header declares the expected interface,
 - The C++ LicenseDialog header declares the expected interface,
-- The CMakeLists.txt includes both new source files and links Qt::Network.
+- The CMakeLists.txt includes both new source files and links Qt::Network,
+- LicenseConfig loads environment variables,
+- LicenseStorage provides encrypted storage with tamper detection,
+- LicenseSecureLogger provides secure logging,
+- Offline grace mode and license blocking are implemented,
+- The .env.example file is present and well-formed.
 """
 
 import json
@@ -43,6 +48,27 @@ MAIN_WINDOW_HEADER = os.path.join(
 MAIN_WINDOW_SOURCE = os.path.join(
     PROJECT_ROOT, "ui", "src", "main_window.cpp"
 )
+LICENSE_CONFIG_HEADER = os.path.join(
+    PROJECT_ROOT, "ui", "include", "visioncast_ui", "license_config.h"
+)
+LICENSE_CONFIG_SOURCE = os.path.join(
+    PROJECT_ROOT, "ui", "src", "license_config.cpp"
+)
+LICENSE_STORAGE_HEADER = os.path.join(
+    PROJECT_ROOT, "ui", "include", "visioncast_ui", "license_storage.h"
+)
+LICENSE_STORAGE_SOURCE = os.path.join(
+    PROJECT_ROOT, "ui", "src", "license_storage.cpp"
+)
+LICENSE_LOGGER_HEADER = os.path.join(
+    PROJECT_ROOT, "ui", "include", "visioncast_ui",
+    "license_secure_logger.h"
+)
+LICENSE_LOGGER_SOURCE = os.path.join(
+    PROJECT_ROOT, "ui", "src", "license_secure_logger.cpp"
+)
+ENV_EXAMPLE = os.path.join(PROJECT_ROOT, ".env.example")
+README_PATH = os.path.join(PROJECT_ROOT, "README.md")
 
 
 # =====================================================================
@@ -105,6 +131,62 @@ def main_window_source():
         return f.read()
 
 
+@pytest.fixture(scope="module")
+def config_header():
+    assert os.path.isfile(LICENSE_CONFIG_HEADER)
+    with open(LICENSE_CONFIG_HEADER, "r") as f:
+        return f.read()
+
+
+@pytest.fixture(scope="module")
+def config_source():
+    assert os.path.isfile(LICENSE_CONFIG_SOURCE)
+    with open(LICENSE_CONFIG_SOURCE, "r") as f:
+        return f.read()
+
+
+@pytest.fixture(scope="module")
+def storage_header():
+    assert os.path.isfile(LICENSE_STORAGE_HEADER)
+    with open(LICENSE_STORAGE_HEADER, "r") as f:
+        return f.read()
+
+
+@pytest.fixture(scope="module")
+def storage_source():
+    assert os.path.isfile(LICENSE_STORAGE_SOURCE)
+    with open(LICENSE_STORAGE_SOURCE, "r") as f:
+        return f.read()
+
+
+@pytest.fixture(scope="module")
+def logger_header():
+    assert os.path.isfile(LICENSE_LOGGER_HEADER)
+    with open(LICENSE_LOGGER_HEADER, "r") as f:
+        return f.read()
+
+
+@pytest.fixture(scope="module")
+def logger_source():
+    assert os.path.isfile(LICENSE_LOGGER_SOURCE)
+    with open(LICENSE_LOGGER_SOURCE, "r") as f:
+        return f.read()
+
+
+@pytest.fixture(scope="module")
+def env_example():
+    assert os.path.isfile(ENV_EXAMPLE), ".env.example not found"
+    with open(ENV_EXAMPLE, "r") as f:
+        return f.read()
+
+
+@pytest.fixture(scope="module")
+def readme():
+    assert os.path.isfile(README_PATH)
+    with open(README_PATH, "r") as f:
+        return f.read()
+
+
 # =====================================================================
 # Config schema validation
 # =====================================================================
@@ -138,11 +220,15 @@ class TestLicenseConfig:
     def test_no_hardcoded_secrets(self, config):
         """Ensure the shipped config template does not contain real keys."""
         api_key = config["api_key"]
-        # Template should ship with an empty api_key so that users fill it
-        # in locally.  A non-empty value is acceptable only if it looks like
-        # a Base64-encoded JWT header (starts with "eyJ").
         assert api_key == "" or api_key.startswith("eyJ"), (
             "api_key should be empty or a Base64-encoded JWT"
+        )
+
+    def test_no_hardcoded_supabase_url(self, config):
+        """The config must not contain a real Supabase URL."""
+        url = config["api_url"]
+        assert "supabase.co" not in url, (
+            "Supabase URL must not be hardcoded in config"
         )
 
 
@@ -192,6 +278,30 @@ class TestLicenseManagerHeader:
     def test_signals_declared(self, manager_header, signal):
         assert signal in manager_header
 
+    def test_offline_grace_methods(self, manager_header):
+        """Verify offline grace mode API is declared."""
+        assert "tryOfflineGrace" in manager_header
+        assert "offlineValidUntil" in manager_header
+        assert "kOfflineGraceDays" in manager_header
+
+    def test_blocking_methods(self, manager_header):
+        """Verify blocking API is declared."""
+        assert "shouldBlockApplication" in manager_header
+        assert "blockReason" in manager_header
+
+    def test_license_blocked_signal(self, manager_header):
+        assert "licenseBlocked" in manager_header
+
+    def test_offline_mode_signal(self, manager_header):
+        assert "offlineModeActivated" in manager_header
+
+    def test_load_from_environment(self, manager_header):
+        assert "loadFromEnvironment" in manager_header
+
+    def test_prestige_mention(self, manager_header):
+        """The Prestige Technologie Company credit must appear."""
+        assert "Prestige Technologie Company" in manager_header
+
 
 class TestLicenseManagerSource:
     """Verify the C++ source implements key LicenseManager logic."""
@@ -217,6 +327,33 @@ class TestLicenseManagerSource:
     def test_machine_id_generation(self, manager_source):
         assert "generateMachineId" in manager_source
         assert "QCryptographicHash" in manager_source
+
+    def test_includes_license_config(self, manager_source):
+        assert "license_config.h" in manager_source
+
+    def test_includes_license_storage(self, manager_source):
+        assert "license_storage.h" in manager_source
+
+    def test_includes_secure_logger(self, manager_source):
+        assert "license_secure_logger.h" in manager_source
+
+    def test_offline_grace_implementation(self, manager_source):
+        assert "tryOfflineGrace" in manager_source
+        assert "offlineValidUntil" in manager_source
+
+    def test_blocking_implementation(self, manager_source):
+        assert "shouldBlockApplication" in manager_source
+        assert "blockReason" in manager_source
+
+    def test_refresh_offline_deadline(self, manager_source):
+        assert "refreshOfflineDeadline" in manager_source
+
+    def test_no_hardcoded_supabase_url(self, manager_source):
+        """Source must not contain real Supabase URLs."""
+        assert "qkcchctrmrpdyseplbvb" not in manager_source
+
+    def test_prestige_mention(self, manager_source):
+        assert "Prestige Technologie Company" in manager_source
 
 
 # =====================================================================
@@ -274,6 +411,15 @@ class TestCMakeIntegration:
     def test_qt_network_linked(self, cmake_text):
         assert "Network" in cmake_text
 
+    def test_license_config_in_sources(self, cmake_text):
+        assert "license_config.cpp" in cmake_text
+
+    def test_license_storage_in_sources(self, cmake_text):
+        assert "license_storage.cpp" in cmake_text
+
+    def test_license_secure_logger_in_sources(self, cmake_text):
+        assert "license_secure_logger.cpp" in cmake_text
+
 
 # =====================================================================
 # MainWindow integration
@@ -302,3 +448,311 @@ class TestMainWindowIntegration:
 
     def test_license_config_loaded(self, main_window_source):
         assert "license.json" in main_window_source
+
+    def test_about_slot(self, main_window_header):
+        assert "onAbout" in main_window_header
+
+    def test_license_blocked_slot(self, main_window_header):
+        assert "onLicenseBlocked" in main_window_header
+
+    def test_block_screen_method(self, main_window_header):
+        assert "showLicenseBlockScreen" in main_window_header
+
+    def test_includes_license_config_header(self, main_window_source):
+        assert "license_config.h" in main_window_source
+
+    def test_load_from_environment_called(self, main_window_source):
+        assert "loadFromEnvironment" in main_window_source
+
+    def test_prestige_mention_header(self, main_window_header):
+        assert "Prestige Technologie Company" in main_window_header
+
+    def test_about_dialog_text(self, main_window_source):
+        assert "Prestige Technologie Company" in main_window_source
+
+    def test_block_dialog_text(self, main_window_source):
+        assert "ne peut pas" in main_window_source
+
+
+# =====================================================================
+# LicenseConfig module
+# =====================================================================
+
+class TestLicenseConfigModule:
+    """Verify the LicenseConfig header/source for env variable loading."""
+
+    def test_header_exists(self):
+        assert os.path.isfile(LICENSE_CONFIG_HEADER)
+
+    def test_source_exists(self):
+        assert os.path.isfile(LICENSE_CONFIG_SOURCE)
+
+    def test_header_pragma_once(self, config_header):
+        assert "#pragma once" in config_header
+
+    def test_class_declaration(self, config_header):
+        assert "class LicenseConfig" in config_header
+
+    def test_load_method(self, config_header):
+        assert "load" in config_header
+
+    def test_api_url_method(self, config_header):
+        assert "apiUrl" in config_header
+
+    def test_api_key_method(self, config_header):
+        assert "apiKey" in config_header
+
+    def test_is_valid_method(self, config_header):
+        assert "isValid" in config_header
+
+    def test_error_message_method(self, config_header):
+        assert "errorMessage" in config_header
+
+    def test_reads_env_variables(self, config_source):
+        assert "LICENSE_API_URL" in config_source
+        assert "LICENSE_API_KEY" in config_source
+
+    def test_uses_qprocess_environment(self, config_source):
+        assert "QProcessEnvironment" in config_source
+
+
+# =====================================================================
+# LicenseStorage module — encrypted storage & tamper detection
+# =====================================================================
+
+class TestLicenseStorageModule:
+    """Verify the LicenseStorage header/source for encrypted storage."""
+
+    def test_header_exists(self):
+        assert os.path.isfile(LICENSE_STORAGE_HEADER)
+
+    def test_source_exists(self):
+        assert os.path.isfile(LICENSE_STORAGE_SOURCE)
+
+    def test_header_pragma_once(self, storage_header):
+        assert "#pragma once" in storage_header
+
+    def test_class_declaration(self, storage_header):
+        assert "class LicenseStorage" in storage_header
+
+    def test_load_method(self, storage_header):
+        assert "load" in storage_header
+
+    def test_save_method(self, storage_header):
+        assert "save" in storage_header
+
+    def test_license_key_method(self, storage_header):
+        assert "licenseKey" in storage_header
+
+    def test_offline_valid_until(self, storage_header):
+        assert "offlineValidUntil" in storage_header
+
+    def test_is_tampered_method(self, storage_header):
+        assert "isTampered" in storage_header
+
+    def test_xor_obfuscate_method(self, storage_header):
+        assert "xorObfuscate" in storage_header
+
+    def test_compute_integrity_method(self, storage_header):
+        assert "computeIntegrity" in storage_header
+
+    def test_uses_sha256(self, storage_source):
+        assert "Sha256" in storage_source
+
+    def test_uses_xor(self, storage_source):
+        assert "xorObfuscate" in storage_source
+
+    def test_integrity_check(self, storage_source):
+        assert "integrity" in storage_source
+
+    def test_key_enc_field(self, storage_source):
+        assert "key_enc" in storage_source
+
+    def test_offline_field(self, storage_source):
+        assert "offline_valid_until" in storage_source
+
+    def test_tamper_detection(self, storage_source):
+        """Verify that tampered flag is set on integrity mismatch."""
+        assert "tampered_" in storage_source
+
+
+# =====================================================================
+# LicenseSecureLogger module
+# =====================================================================
+
+class TestLicenseSecureLoggerModule:
+    """Verify the secure logger header/source."""
+
+    def test_header_exists(self):
+        assert os.path.isfile(LICENSE_LOGGER_HEADER)
+
+    def test_source_exists(self):
+        assert os.path.isfile(LICENSE_LOGGER_SOURCE)
+
+    def test_header_pragma_once(self, logger_header):
+        assert "#pragma once" in logger_header
+
+    def test_class_declaration(self, logger_header):
+        assert "class LicenseSecureLogger" in logger_header
+
+    def test_log_validation_method(self, logger_header):
+        assert "logValidation" in logger_header
+
+    def test_log_error_method(self, logger_header):
+        assert "logError" in logger_header
+
+    def test_log_offline_mode(self, logger_header):
+        assert "logOfflineModeEnabled" in logger_header
+
+    def test_log_info_method(self, logger_header):
+        assert "logInfo" in logger_header
+
+    def test_writes_to_log_file(self, logger_source):
+        assert "license_secure.log" in logger_source
+
+    def test_uses_mutex(self, logger_source):
+        assert "QMutex" in logger_source
+
+    def test_timestamp_format(self, logger_source):
+        assert "yyyy-MM-dd HH:mm:ss" in logger_source
+
+
+# =====================================================================
+# .env.example file
+# =====================================================================
+
+class TestEnvExample:
+    """Verify the .env.example file is well-formed."""
+
+    def test_file_exists(self):
+        assert os.path.isfile(ENV_EXAMPLE)
+
+    def test_contains_api_url(self, env_example):
+        assert "LICENSE_API_URL" in env_example
+
+    def test_contains_api_key(self, env_example):
+        assert "LICENSE_API_KEY" in env_example
+
+    def test_no_real_credentials(self, env_example):
+        """Example file must not contain real Supabase project IDs."""
+        assert "qkcchctrmrpdyseplbvb" not in env_example
+
+    def test_security_warning(self, env_example):
+        assert "Never" in env_example or "never" in env_example
+
+
+# =====================================================================
+# README security warning
+# =====================================================================
+
+class TestReadmeSecurity:
+    """Verify the README has the required security warnings."""
+
+    def test_supabase_warning(self, readme):
+        assert "Ne jamais exposer" in readme
+
+    def test_env_vars_documented(self, readme):
+        assert "LICENSE_API_URL" in readme
+        assert "LICENSE_API_KEY" in readme
+
+    def test_prestige_mention(self, readme):
+        assert "Prestige Technologie Company" in readme
+
+
+# =====================================================================
+# Offline grace mode tests
+# =====================================================================
+
+class TestOfflineGraceMode:
+    """Verify the offline grace mode is fully implemented."""
+
+    def test_offline_valid_until_in_header(self, manager_header):
+        assert "offlineValidUntil" in manager_header
+
+    def test_grace_days_constant(self, manager_header):
+        assert "kOfflineGraceDays" in manager_header
+
+    def test_try_offline_grace_in_source(self, manager_source):
+        assert "tryOfflineGrace" in manager_source
+
+    def test_refresh_deadline_on_valid(self, manager_source):
+        """When validate_key returns active, deadline must be refreshed."""
+        assert "refreshOfflineDeadline" in manager_source
+
+    def test_offline_signal_emitted(self, manager_source):
+        assert "offlineModeActivated" in manager_source
+
+    def test_storage_offline_field(self, storage_header):
+        assert "offline_valid_until" in storage_header
+
+    def test_7_day_grace_in_source(self, manager_source):
+        """Verify that addDays(kOfflineGraceDays) is used."""
+        assert "kOfflineGraceDays" in manager_source
+
+    def test_current_datetime_check(self, manager_source):
+        assert "currentDateTimeUtc" in manager_source
+
+
+# =====================================================================
+# Invalid licence blocking tests
+# =====================================================================
+
+class TestInvalidLicenceBlocking:
+    """Verify that invalid/expired/suspended licences block the app."""
+
+    def test_should_block_declared(self, manager_header):
+        assert "shouldBlockApplication" in manager_header
+
+    def test_block_reason_declared(self, manager_header):
+        assert "blockReason" in manager_header
+
+    def test_license_blocked_signal(self, manager_header):
+        assert "licenseBlocked" in manager_header
+
+    def test_block_on_invalid(self, manager_source):
+        assert "LicenseStatus::Invalid" in manager_source
+
+    def test_block_on_expired(self, manager_source):
+        assert "LicenseStatus::Expired" in manager_source
+
+    def test_block_on_suspended(self, manager_source):
+        assert "LicenseStatus::Suspended" in manager_source
+
+    def test_main_window_handles_block(self, main_window_source):
+        assert "onLicenseBlocked" in main_window_source
+
+    def test_main_window_shows_block_screen(self, main_window_source):
+        assert "showLicenseBlockScreen" in main_window_source
+
+    def test_application_quit_called(self, main_window_source):
+        assert "quit" in main_window_source
+
+
+# =====================================================================
+# Tampering detection tests
+# =====================================================================
+
+class TestTamperingDetection:
+    """Verify that the storage module detects file tampering."""
+
+    def test_integrity_hash_computed(self, storage_source):
+        assert "computeIntegrity" in storage_source
+
+    def test_sha256_used_for_integrity(self, storage_source):
+        assert "Sha256" in storage_source
+
+    def test_tampered_flag_set(self, storage_source):
+        assert "tampered_ = true" in storage_source
+
+    def test_xor_obfuscation_present(self, storage_source):
+        assert "xorObfuscate" in storage_source
+
+    def test_key_never_stored_plain(self, storage_source):
+        """Encrypted key is stored as hex, never in plain text."""
+        assert "toHex" in storage_source
+        assert "fromHex" in storage_source
+
+    def test_xor_key_derived_from_machine_id(self, storage_source):
+        """XOR key must be derived from SHA-256 of machine ID."""
+        assert "QCryptographicHash" in storage_source
+        assert "machineId" in storage_source
