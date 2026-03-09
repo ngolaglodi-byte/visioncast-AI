@@ -16,6 +16,25 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 # --- VisionCast UI Executable ---
+# Explicitly list Q_OBJECT headers so that AUTOMOC discovers and processes them.
+# AUTOMOC only scans headers in the same directory as listed sources; since our
+# headers live in include/visioncast_ui/ (not src/), they must be added here.
+set(UI_HEADERS
+    include/visioncast_ui/main_window.h
+    include/visioncast_ui/preview_panel.h
+    include/visioncast_ui/overlay_editor.h
+    include/visioncast_ui/talent_manager.h
+    include/visioncast_ui/output_config.h
+    include/visioncast_ui/monitoring_panel.h
+    include/visioncast_ui/control_room.h
+    include/visioncast_ui/design_panel.h
+    include/visioncast_ui/recognition_panel.h
+    include/visioncast_ui/device_scanner.h
+    include/visioncast_ui/license_manager.h
+    include/visioncast_ui/license_dialog.h
+    include/visioncast_ui/python_launcher.h
+)
+
 set(UI_SOURCES
     src/main.cpp
     src/main_window.cpp
@@ -34,6 +53,7 @@ set(UI_SOURCES
     src/license_secure_logger.cpp
     src/license_storage.cpp
     src/python_launcher.cpp
+    ${UI_HEADERS}
 )
 
 # --- Windows: embed icon into the executable via .rc (only if the .ico exists) ---

@@ -8,10 +8,18 @@
 #include <QPushButton>
 #include <QVariant>
 
+#if defined(HAS_DECKLINK)
 #include "visioncast_sdk/decklink_device.h"
+#endif
+#if defined(HAS_AJA)
 #include "visioncast_sdk/aja_device.h"
+#endif
+#if defined(HAS_MAGEWELL)
 #include "visioncast_sdk/magewell_device.h"
+#endif
+#if defined(HAS_NDI)
 #include "visioncast_sdk/ndi_device.h"
+#endif
 
 namespace visioncast_ui {
 
