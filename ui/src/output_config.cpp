@@ -8,6 +8,7 @@
 #include <QPushButton>
 #include <QVariant>
 
+#include "visioncast_sdk/video_device.h"
 #include "visioncast_sdk/decklink_device.h"
 #include "visioncast_sdk/aja_device.h"
 #include "visioncast_sdk/magewell_device.h"

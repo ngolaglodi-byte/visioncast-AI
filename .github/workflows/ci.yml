@@ -97,24 +97,42 @@ jobs:
         with:
           path: C:\vcpkg\installed\x64-windows
           key: vcpkg-x64-windows-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+            vcpkg-x64-windows-
 
       - name: Install dependencies via vcpkg (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
+        env:
+          VCPKG_ASSET_SOURCES: "x-azurl,https://packages.vcpkg.org/cache,sha512"
         run: |
           # Temporarily rename vcpkg.json to allow classic mode
           # (vcpkg.json includes ffmpeg which takes ~30 min to compile and is not needed in CI).
           if (Test-Path vcpkg.json) {
             Rename-Item vcpkg.json vcpkg.json.bak
           }
-          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg" install --classic `
-            opencv4:x64-windows `
-            zeromq:x64-windows `
-            cppzmq:x64-windows `
-            freetype:x64-windows `
-            glfw3:x64-windows `
-            glew:x64-windows `
-            nlohmann-json:x64-windows
+          $packages = @(
+            "opencv4:x64-windows",
+            "zeromq:x64-windows",
+            "cppzmq:x64-windows",
+            "freetype:x64-windows",
+            "glfw3:x64-windows",
+            "glew:x64-windows",
+            "nlohmann-json:x64-windows"
+          )
+
+          # Retry to mitigate transient download errors (e.g., HTTP 5xx from GitHub).
+          $maxAttempts = 3
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            & "$env:VCPKG_INSTALLATION_ROOT\vcpkg" install --classic @packages
+            if ($LASTEXITCODE -eq 0) { break }
+            if ($attempt -lt $maxAttempts) {
+              Write-Host "vcpkg install failed on attempt $attempt; retrying..."
+              Start-Sleep -Seconds (15 * $attempt)
+            } else {
+              throw "vcpkg install failed after $maxAttempts attempts"
+            }
+          }
           # Restore vcpkg.json
           if (Test-Path vcpkg.json.bak) {
             Rename-Item vcpkg.json.bak vcpkg.json
@@ -177,4 +195,3 @@ jobs:
             --ignore=tests/test_modules.py \
             --ignore=tests/test_packaging.py \
             -k "not face_recognition"
-
