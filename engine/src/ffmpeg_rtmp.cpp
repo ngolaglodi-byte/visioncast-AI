@@ -216,7 +216,9 @@ bool FFmpegRtmpOutput::start() {
     impl_->codecCtx->bit_rate = cfg.bitrateBps;
     impl_->codecCtx->width    = cfg.width;
     impl_->codecCtx->height   = cfg.height;
-    impl_->codecCtx->time_base = {1000, static_cast<int>(cfg.frameRate * 1000)};
+    // Use a scaled time_base for fractional frame rates (e.g., 29.97 fps)
+    // time_base = 1/1000 allows for millisecond precision
+    impl_->codecCtx->time_base = {1, 1000};
     impl_->codecCtx->framerate = {static_cast<int>(cfg.frameRate * 1000), 1000};
     impl_->codecCtx->gop_size = 12;
     impl_->codecCtx->pix_fmt  = AV_PIX_FMT_YUV420P;
@@ -337,10 +339,10 @@ bool FFmpegRtmpOutput::sendFrame(const RtmpFrame& frame) {
             
             // De-interleave NV12 UV into separate U and V planes
             const uint8_t* uv = frame.data + lumaSize;
-            const int chromaPixels = (frame.width / 2) * (frame.height / 2);
+            const size_t chromaPixels = static_cast<size_t>(frame.width / 2) * (frame.height / 2);
             uint8_t* uPlane = avFrame->data[1];
             uint8_t* vPlane = avFrame->data[2];
-            for (int i = 0; i < chromaPixels; ++i) {
+            for (size_t i = 0; i < chromaPixels; ++i) {
                 uPlane[i] = uv[2 * i];
                 vPlane[i] = uv[2 * i + 1];
             }

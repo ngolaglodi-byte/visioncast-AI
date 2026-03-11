@@ -86,19 +86,27 @@ struct MultiFFmpegRtmpManager::Impl {
 
     void setStatus(StreamRecord& rec, RtmpStatus st, const std::string& msg)
     {
+        std::string recId;
         {
             std::lock_guard<std::mutex> lk(rec.mutex);
             rec.entry.status        = st;
             rec.entry.statusMessage = msg;
+            recId = rec.entry.id;
         }
-        if (statusCb) statusCb(rec.entry.id, st, msg);
+        // Copy callback under lock to avoid race conditions
+        StatusCallback cbCopy;
+        {
+            std::lock_guard<std::mutex> lk(listMutex);
+            cbCopy = statusCb;
+        }
+        if (cbCopy) cbCopy(recId, st, msg);
     }
 };
 
 // ── Construction / Destruction ─────────────────────────────────────────────
 
 MultiFFmpegRtmpManager::MultiFFmpegRtmpManager()
-    : impl_(std::make_unique<Impl>())
+    : impl_(std::make_shared<Impl>())
 {}
 
 MultiFFmpegRtmpManager::~MultiFFmpegRtmpManager()
@@ -213,10 +221,12 @@ bool MultiFFmpegRtmpManager::startStream(const std::string& id)
     const std::string key   = rec->entry.streamKey;
     const std::string recId = id;
 
-    // Capture shared_ptr so the StreamRecord outlives the worker thread.
-    rec->worker = std::thread([this, rec, url, key, recId]() {
+    // Capture shared_ptr to impl_ to ensure it outlives the worker thread,
+    // preventing dangling pointer access if the manager is destroyed early.
+    std::shared_ptr<Impl> implPtr = impl_;
+    rec->worker = std::thread([implPtr, rec, url, key, recId]() {
         logInfo(TAG, "Worker thread started for: " + recId);
-        impl_->pushLog(*rec, "[INFO] Connecting to " + url);
+        implPtr->pushLog(*rec, "[INFO] Connecting to " + url);
 
         // Configure and open the FFmpeg RTMP output
         RtmpStreamConfig cfg;
@@ -232,8 +242,8 @@ bool MultiFFmpegRtmpManager::startStream(const std::string& id)
         if (!opened) {
             const std::string errMsg = "Failed to open RTMP output for " + rec->entry.name;
             logError(TAG, errMsg);
-            impl_->pushLog(*rec, "[ERROR] " + errMsg);
-            impl_->setStatus(*rec, RtmpStatus::Error, errMsg);
+            implPtr->pushLog(*rec, "[ERROR] " + errMsg);
+            implPtr->setStatus(*rec, RtmpStatus::Error, errMsg);
             return;
         }
 
@@ -241,14 +251,14 @@ bool MultiFFmpegRtmpManager::startStream(const std::string& id)
         if (!started) {
             const std::string errMsg = "Failed to start stream for " + rec->entry.name;
             logError(TAG, errMsg);
-            impl_->pushLog(*rec, "[ERROR] " + errMsg);
+            implPtr->pushLog(*rec, "[ERROR] " + errMsg);
             rec->output.close();
-            impl_->setStatus(*rec, RtmpStatus::Error, errMsg);
+            implPtr->setStatus(*rec, RtmpStatus::Error, errMsg);
             return;
         }
 
-        impl_->pushLog(*rec, "[OK] Stream live: " + rec->entry.name);
-        impl_->setStatus(*rec, RtmpStatus::Live, "Streaming live");
+        implPtr->pushLog(*rec, "[OK] Stream live: " + rec->entry.name);
+        implPtr->setStatus(*rec, RtmpStatus::Live, "Streaming live");
         logInfo(TAG, "Stream live: " + recId);
 
         // Keep the stream alive until stopRequested.
@@ -259,8 +269,8 @@ bool MultiFFmpegRtmpManager::startStream(const std::string& id)
         // Graceful shutdown.
         rec->output.stop();
         rec->output.close();
-        impl_->pushLog(*rec, "[INFO] Stream stopped: " + rec->entry.name);
-        impl_->setStatus(*rec, RtmpStatus::Idle, "Stopped");
+        implPtr->pushLog(*rec, "[INFO] Stream stopped: " + rec->entry.name);
+        implPtr->setStatus(*rec, RtmpStatus::Idle, "Stopped");
         logInfo(TAG, "Stream stopped: " + recId);
     });
 
