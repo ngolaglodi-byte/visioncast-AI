@@ -9,6 +9,7 @@ Provides fast, resilient loading of the talent database with:
 
 import hashlib
 import json
+import logging
 import os
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -20,6 +21,8 @@ try:
     import face_recognition
 except ImportError:
     face_recognition = None
+
+logger = logging.getLogger(__name__)
 
 
 class TalentsLoader:
@@ -72,6 +75,10 @@ class TalentsLoader:
         Returns:
             Number of talents successfully loaded.
         """
+        if not os.path.isfile(self.talents_path):
+            logger.error("[TalentsLoader] Talents file not found: %s", self.talents_path)
+            return 0
+            
         with open(self.talents_path, "r", encoding="utf-8") as fh:
             data = json.load(fh)
 
@@ -90,9 +97,9 @@ class TalentsLoader:
                 try:
                     enc = future.result()
                 except Exception as exc:
-                    print(
-                        f"[TalentsLoader] Error processing "
-                        f"{talent_meta.get('name', '?')}: {exc}"
+                    logger.warning(
+                        "[TalentsLoader] Error processing '%s': %s",
+                        talent_meta.get('name', '?'), exc
                     )
                     continue
 
@@ -104,7 +111,7 @@ class TalentsLoader:
             self.talents = loaded_talents
             self.encodings = loaded_encodings
 
-        print(f"[TalentsLoader] Loaded {len(self.talents)} talent(s).")
+        logger.info("[TalentsLoader] Loaded %d talent(s).", len(self.talents))
         return len(self.talents)
 
     def reload_if_changed(self) -> bool:
@@ -149,10 +156,18 @@ class TalentsLoader:
 
     def _process_talent(self, talent: dict) -> Optional[np.ndarray]:
         """Load a talent image and return its encoding."""
-        image_path = os.path.join(self.project_root, talent["photo"])
+        photo_path = talent.get("photo", "")
+        if not photo_path:
+            logger.warning(
+                "[TalentsLoader] No photo path for talent '%s'",
+                talent.get("name", "unknown")
+            )
+            return None
+            
+        image_path = os.path.join(self.project_root, photo_path)
 
         if not os.path.isfile(image_path):
-            print(f"[TalentsLoader] Image not found: {image_path}")
+            logger.warning("[TalentsLoader] Image not found: %s", image_path)
             return None
 
         # Try disk cache first.
@@ -164,7 +179,7 @@ class TalentsLoader:
         encs = face_recognition.face_encodings(img)
 
         if not encs:
-            print(f"[TalentsLoader] No face found in {image_path}")
+            logger.warning("[TalentsLoader] No face found in %s", image_path)
             return None
 
         encoding = encs[0]
@@ -201,7 +216,7 @@ class TalentsLoader:
         try:
             np.save(cache_path, enc)
         except Exception as exc:
-            print(f"[TalentsLoader] Cache write error: {exc}")
+            logger.warning("[TalentsLoader] Cache write error: %s", exc)
 
     # ------------------------------------------------------------------
     # Utility

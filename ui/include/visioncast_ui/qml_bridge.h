@@ -12,6 +12,7 @@
 #include <QVariantList>
 #include <QVariantMap>
 #include <QTimer>
+#include <atomic>
 #include <memory>
 
 namespace visioncast_ui {
@@ -131,6 +132,53 @@ public:
     /// Reload RTMP stream list from the session config.
     Q_INVOKABLE void loadRtmpConfig();
 
+    // ── Project import/export ──────────────────────────────────────
+
+    /// Import a project configuration from file.
+    Q_INVOKABLE void importProject();
+
+    /// Export the current project configuration to file.
+    Q_INVOKABLE void exportProject();
+
+    // ── Theme and design management ────────────────────────────────
+
+    /// Set the application theme (Dark, Light, Ocean, Prestige).
+    Q_INVOKABLE void setTheme(const QString& theme);
+
+    /// Set the accent color for UI elements.
+    Q_INVOKABLE void setAccentColor(const QString& color);
+
+    /// Set the graphics template (Default, Barred, Minimal, etc.).
+    Q_INVOKABLE void setGraphicsTemplate(const QString& templateName);
+
+    /// Export design settings to file.
+    Q_INVOKABLE void exportDesignSettings();
+
+    /// Import design settings from file.
+    Q_INVOKABLE void importDesignSettings();
+
+    // ── Talent management ──────────────────────────────────────────
+
+    /// Add a new talent to the database.
+    Q_INVOKABLE void addTalent(const QString& name, const QString& role,
+                               const QString& organisation, const QString& photo);
+
+    /// Update an existing talent.
+    Q_INVOKABLE void updateTalent(const QString& id, const QString& name,
+                                  const QString& role, const QString& organisation,
+                                  const QString& photo);
+
+    /// Remove a talent from the database.
+    Q_INVOKABLE void removeTalent(const QString& id);
+
+    // ── Overlay management ─────────────────────────────────────────
+
+    /// Update overlay properties.
+    Q_INVOKABLE void updateOverlay(const QString& id, const QString& title,
+                                   const QString& subtitle, const QString& style,
+                                   const QString& color, const QString& entryAnim,
+                                   const QString& exitAnim, int duration);
+
 signals:
     void engineStatusChanged();
     void aiStatusChanged();
@@ -179,7 +227,11 @@ private:
     double  gpuUsage_      = 0.0;
     double  memoryUsage_   = 0.0;
     QString currentTalent_;
+    QString currentTheme_       = QStringLiteral("Dark");
+    QString currentAccentColor_ = QStringLiteral("#1F6FEB");
+    QString currentTemplate_    = QStringLiteral("Default");
     int     selectedSourceIndex_ = -1;
+    std::atomic<int> nextTalentId_{100};
 
     QVariantList videoSources_;
     QVariantList talents_;

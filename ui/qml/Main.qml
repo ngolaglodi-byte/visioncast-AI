@@ -24,8 +24,8 @@ ApplicationWindow {
         background: Rectangle { color: "#161B22" }
         Menu {
             title: "File"
-            Action { text: "Import Project..."; onTriggered: { /* TODO: bridge.importProject() */ } }
-            Action { text: "Export Project..."; onTriggered: { /* TODO: bridge.exportProject() */ } }
+            Action { text: "Import Project..."; onTriggered: bridge.importProject() }
+            Action { text: "Export Project..."; onTriggered: bridge.exportProject() }
             MenuSeparator {}
             Action { text: "Settings..."; onTriggered: settingsDialog.open() }
             Action { text: "Exit"; onTriggered: Qt.quit() }
@@ -35,7 +35,7 @@ ApplicationWindow {
             Action { text: "Show Monitoring"; checked: true; checkable: true
                 onToggled: { bottomBar.visible = checked } }
             Action { text: "Dark/Light Theme"; checkable: true; checked: true
-                onToggled: { /* TODO: Theme switch */ } }
+                onToggled: { bridge.setTheme(checked ? "Dark" : "Light") } }
         }
         Menu {
             title: "Broadcast"
@@ -77,8 +77,7 @@ ApplicationWindow {
             height: 48
             color:  "#161B22"
             z:      10
-            // TODO: tu peux déplacer ici le contenu du RowLayout/logo/statuts si tu veux le rendre sticky même si tu scrolles
-            // .... [inchangé]
+            // Note: Top bar can contain sticky logo/status if needed for scrolling layouts.
         }
 
         // MAIN
@@ -327,19 +326,85 @@ ApplicationWindow {
         title: "Settings"
         modal: true
         anchors.centerIn: parent
-        width: 420
-        height: 320
+        width: 480
+        height: 400
         standardButtons: Dialog.Ok | Dialog.Cancel
         visible: false
-        // TODO: Remplis avec des réglages réels si besoin
+
+        property string selectedTheme: "Dark"
+        property string selectedAccent: "#1F6FEB"
+
         contentItem: Column {
-            anchors.centerIn: parent
+            anchors.fill: parent
+            anchors.margins: 20
             spacing: 16
+
             Text {
-                text: "[Settings à venir...]"
-                anchors.horizontalCenter: parent.horizontalCenter
-                color: "#8B949E"
+                text: "Application Settings"
+                font.pixelSize: 16
+                font.weight: Font.Bold
+                color: "#E6EDF3"
             }
+
+            Rectangle { width: parent.width; height: 1; color: "#30363D" }
+
+            // Theme selection
+            Row {
+                spacing: 16
+                Text {
+                    text: "Theme:"
+                    color: "#8B949E"
+                    font.pixelSize: 13
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 100
+                }
+                ComboBox {
+                    id: themeSettingsCombo
+                    model: ["Dark", "Light", "Ocean", "Prestige"]
+                    currentIndex: Math.max(0, model.indexOf(settingsDialog.selectedTheme))
+                    onCurrentIndexChanged: settingsDialog.selectedTheme = themeSettingsCombo.model[currentIndex]
+                }
+            }
+
+            // Accent color
+            Row {
+                spacing: 16
+                Text {
+                    text: "Accent Color:"
+                    color: "#8B949E"
+                    font.pixelSize: 13
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 100
+                }
+                Repeater {
+                    model: ["#1F6FEB", "#A855F7", "#3FB950", "#FFD33D", "#F85149"]
+                    delegate: Rectangle {
+                        width: 28; height: 28; radius: 14
+                        color: modelData
+                        border.color: settingsDialog.selectedAccent === modelData ? "#E6EDF3" : "transparent"
+                        border.width: 2
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: settingsDialog.selectedAccent = modelData
+                        }
+                    }
+                }
+            }
+
+            Rectangle { width: parent.width; height: 1; color: "#30363D" }
+
+            Text {
+                text: "Changes will be applied on OK"
+                color: "#8B949E"
+                font.pixelSize: 11
+                font.italic: true
+            }
+        }
+
+        onAccepted: {
+            bridge.setTheme(settingsDialog.selectedTheme)
+            bridge.setAccentColor(settingsDialog.selectedAccent)
         }
     }
 }

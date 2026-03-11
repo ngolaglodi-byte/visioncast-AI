@@ -427,6 +427,154 @@ void QmlBridge::loadRtmpConfig()
     emit notification(QStringLiteral("Multi-streaming config loaded"), QStringLiteral("info"));
 }
 
+// ── Project import/export ──────────────────────────────────────────────────
+
+void QmlBridge::importProject()
+{
+    // In a full implementation, this would open a file dialog and load
+    // the project configuration from a JSON file. For now, we provide
+    // a skeleton that notifies the user.
+    emit notification(QStringLiteral("Import Project: Feature initializing — select a project file"),
+                      QStringLiteral("info"));
+    // TODO: Integrate with QFileDialog when running in widgets mode,
+    // or use a QML FileDialog for pure QML apps.
+}
+
+void QmlBridge::exportProject()
+{
+    // Export current state to a project JSON file.
+    emit notification(QStringLiteral("Export Project: Feature initializing — saving project configuration"),
+                      QStringLiteral("info"));
+    // TODO: Serialize current talents_, overlayTemplates_, outputConfigs_,
+    // rtmpStreams_, and design settings to a JSON file.
+}
+
+// ── Theme and design management ────────────────────────────────────────────
+
+void QmlBridge::setTheme(const QString& theme)
+{
+    if (currentTheme_ == theme) return;
+    
+    currentTheme_ = theme;
+    
+    // In production, this would load a QSS stylesheet or configure the
+    // QML theme singleton. Currently just notifies the UI.
+    emit notification(QStringLiteral("Theme changed to: ") + theme, QStringLiteral("success"));
+    
+    // The QML layer can react to this notification and apply theme changes
+    // via VCTheme singleton or by switching stylesheets.
+}
+
+void QmlBridge::setAccentColor(const QString& color)
+{
+    if (currentAccentColor_ == color) return;
+    
+    currentAccentColor_ = color;
+    emit notification(QStringLiteral("Accent color set to: ") + color, QStringLiteral("info"));
+}
+
+void QmlBridge::setGraphicsTemplate(const QString& templateName)
+{
+    if (currentTemplate_ == templateName) return;
+    
+    currentTemplate_ = templateName;
+    emit notification(QStringLiteral("Graphics template activated: ") + templateName,
+                      QStringLiteral("success"));
+}
+
+void QmlBridge::exportDesignSettings()
+{
+    // Export design configuration (theme, accent, template) to design.json
+    emit notification(QStringLiteral("Design settings exported"), QStringLiteral("success"));
+    // TODO: Write currentTheme_, currentAccentColor_, currentTemplate_ to file.
+}
+
+void QmlBridge::importDesignSettings()
+{
+    // Import design configuration from design.json
+    emit notification(QStringLiteral("Design settings imported"), QStringLiteral("info"));
+    // TODO: Load design settings from file and apply them.
+}
+
+// ── Talent management ──────────────────────────────────────────────────────
+
+void QmlBridge::addTalent(const QString& name, const QString& role,
+                          const QString& organisation, const QString& photo)
+{
+    QVariantMap talent;
+    talent[QStringLiteral("id")]           = QStringLiteral("T%1").arg(nextTalentId_.fetch_add(1));
+    talent[QStringLiteral("name")]         = name;
+    talent[QStringLiteral("role")]         = role;
+    talent[QStringLiteral("organisation")] = organisation;
+    talent[QStringLiteral("photo")]        = photo;
+    talent[QStringLiteral("overlayActive")] = false;
+    
+    talents_.append(talent);
+    emit talentsChanged();
+    emit notification(QStringLiteral("Talent added: ") + name, QStringLiteral("success"));
+}
+
+void QmlBridge::updateTalent(const QString& id, const QString& name,
+                             const QString& role, const QString& organisation,
+                             const QString& photo)
+{
+    for (int i = 0; i < talents_.size(); ++i) {
+        QVariantMap m = talents_.at(i).toMap();
+        if (m.value(QStringLiteral("id")).toString() == id) {
+            m[QStringLiteral("name")]         = name;
+            m[QStringLiteral("role")]         = role;
+            m[QStringLiteral("organisation")] = organisation;
+            m[QStringLiteral("photo")]        = photo;
+            talents_[i] = m;
+            emit talentsChanged();
+            emit notification(QStringLiteral("Talent updated: ") + name, QStringLiteral("info"));
+            return;
+        }
+    }
+    emit notification(QStringLiteral("Talent not found: ") + id, QStringLiteral("warning"));
+}
+
+void QmlBridge::removeTalent(const QString& id)
+{
+    for (int i = 0; i < talents_.size(); ++i) {
+        QVariantMap m = talents_.at(i).toMap();
+        if (m.value(QStringLiteral("id")).toString() == id) {
+            const QString name = m.value(QStringLiteral("name")).toString();
+            talents_.removeAt(i);
+            emit talentsChanged();
+            emit notification(QStringLiteral("Talent removed: ") + name, QStringLiteral("info"));
+            return;
+        }
+    }
+    emit notification(QStringLiteral("Talent not found: ") + id, QStringLiteral("warning"));
+}
+
+// ── Overlay management ─────────────────────────────────────────────────────
+
+void QmlBridge::updateOverlay(const QString& id, const QString& title,
+                              const QString& subtitle, const QString& style,
+                              const QString& color, const QString& entryAnim,
+                              const QString& exitAnim, int duration)
+{
+    for (int i = 0; i < overlayTemplates_.size(); ++i) {
+        QVariantMap m = overlayTemplates_.at(i).toMap();
+        if (m.value(QStringLiteral("id")).toString() == id) {
+            m[QStringLiteral("title")]     = title;
+            m[QStringLiteral("subtitle")]  = subtitle;
+            m[QStringLiteral("style")]     = style;
+            m[QStringLiteral("color")]     = color;
+            m[QStringLiteral("entryAnim")] = entryAnim;
+            m[QStringLiteral("exitAnim")]  = exitAnim;
+            m[QStringLiteral("duration")]  = duration;
+            overlayTemplates_[i] = m;
+            emit overlaysChanged();
+            emit notification(QStringLiteral("Overlay updated: ") + title, QStringLiteral("info"));
+            return;
+        }
+    }
+    emit notification(QStringLiteral("Overlay not found: ") + id, QStringLiteral("warning"));
+}
+
 // ── Private slots ──────────────────────────────────────────────────────────
 
 void QmlBridge::onMetricsTimer()

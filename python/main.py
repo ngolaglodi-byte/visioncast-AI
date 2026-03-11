@@ -1,10 +1,25 @@
 import logging
 import os
 import time
-
-import cv2
-import face_recognition
 import json
+
+# ---------------------------------------------------------------------------
+# Optional dependencies with graceful fallback
+# ---------------------------------------------------------------------------
+
+try:
+    import cv2
+    HAS_OPENCV = True
+except ImportError:
+    cv2 = None
+    HAS_OPENCV = False
+
+try:
+    import face_recognition
+    HAS_FACE_RECOGNITION = True
+except ImportError:
+    face_recognition = None
+    HAS_FACE_RECOGNITION = False
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -58,18 +73,42 @@ def load_talent_encodings(talents, project_root):
 
     Skips talents whose photo is missing or whose face cannot be encoded
     (fallback behaviour).  Returns *(encodings, metadata)* lists.
+    
+    If face_recognition is not installed, returns empty lists with a warning.
     """
+    if not HAS_FACE_RECOGNITION:
+        logger.warning(
+            "face_recognition module not installed. "
+            "Face recognition features will be disabled. "
+            "Install with: pip install face_recognition"
+        )
+        return [], []
+    
     encodings = []
     metadata = []
 
     for t in talents:
         name = t.get("name", "unknown")
 
-        image_path = os.path.join(project_root, t.get("photo", ""))
+        # Validate photo path exists before loading
+        photo_path = t.get("photo", "")
+        if not photo_path:
+            logger.warning("No photo path specified for talent '%s'. Skipping.", name)
+            continue
+            
+        image_path = os.path.join(project_root, photo_path)
+        
+        if not os.path.isfile(image_path):
+            logger.warning(
+                "Photo file not found for talent '%s' at '%s'. Skipping.",
+                name, image_path
+            )
+            continue
+        
         try:
             img = face_recognition.load_image_file(image_path)
         except Exception as exc:
-            logger.warning("Photo missing or unreadable for talent '%s': %s. Skipping.", name, exc)
+            logger.warning("Photo unreadable for talent '%s': %s. Skipping.", name, exc)
             continue
 
         try:
@@ -95,6 +134,11 @@ KNOWN_ENCODINGS, KNOWN_METADATA = load_talent_encodings(TALENTS, PROJECT_ROOT)
 
 
 def draw_lower_third(frame, title, subtitle):
+    """Draw a lower-third overlay on the frame."""
+    if not HAS_OPENCV:
+        logger.debug("OpenCV not available, skipping lower-third overlay rendering.")
+        return frame
+        
     h, w, _ = frame.shape
     band_h = int(h * 0.18)
 
@@ -112,7 +156,25 @@ def draw_lower_third(frame, title, subtitle):
 
 
 def run():
-    """Main capture and recognition loop."""
+    """Main capture and recognition loop.
+    
+    Requires OpenCV and face_recognition to be installed.
+    Exits gracefully if dependencies are missing.
+    """
+    if not HAS_OPENCV:
+        logger.error(
+            "OpenCV (cv2) is not installed. "
+            "Install with: pip install opencv-python"
+        )
+        return
+    
+    if not HAS_FACE_RECOGNITION:
+        logger.error(
+            "face_recognition is not installed. "
+            "Install with: pip install face_recognition"
+        )
+        return
+    
     _lower_third_timers = {}
     _consecutive_read_failures = 0
     MAX_READ_FAILURES = 30
