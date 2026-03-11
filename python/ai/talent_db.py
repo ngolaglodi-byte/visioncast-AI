@@ -57,7 +57,7 @@ class TalentDB:
                     talent.get("name", "unknown")
                 )
                 continue
-                
+
             image_path = os.path.join(self.project_root, photo_path)
             if not os.path.exists(image_path):
                 logger.warning("[TalentDB] Image not found: %s", image_path)
@@ -71,7 +71,7 @@ class TalentDB:
                     "[TalentDB] Failed to process image %s: %s", image_path, exc
                 )
                 continue
-                
+
             if len(enc) > 0:
                 self.encodings.append(enc[0])
                 self.talents.append(talent)

@@ -12,9 +12,6 @@ Validates that:
 import json
 import os
 import re
-import sys
-
-import pytest
 
 # Resolve project root (two levels up from tests/).
 PROJECT_ROOT = os.path.abspath(
@@ -22,19 +19,19 @@ PROJECT_ROOT = os.path.abspath(
 )
 
 SDK_INCLUDE = os.path.join(PROJECT_ROOT, "sdk", "include", "visioncast_sdk")
-SDK_SRC     = os.path.join(PROJECT_ROOT, "sdk", "src")
-SDK_CMAKE   = os.path.join(PROJECT_ROOT, "sdk", "CMakeLists.txt")
-UI_INCLUDE  = os.path.join(PROJECT_ROOT, "ui", "include", "visioncast_ui")
-UI_SRC      = os.path.join(PROJECT_ROOT, "ui", "src")
-UI_QML      = os.path.join(PROJECT_ROOT, "ui", "qml")
+SDK_SRC = os.path.join(PROJECT_ROOT, "sdk", "src")
+SDK_CMAKE = os.path.join(PROJECT_ROOT, "sdk", "CMakeLists.txt")
+UI_INCLUDE = os.path.join(PROJECT_ROOT, "ui", "include", "visioncast_ui")
+UI_SRC = os.path.join(PROJECT_ROOT, "ui", "src")
+UI_QML = os.path.join(PROJECT_ROOT, "ui", "qml")
 CONFIG_FILE = os.path.join(PROJECT_ROOT, "config", "system.json")
 
 MANAGER_HEADER = os.path.join(SDK_INCLUDE, "multi_rtmp_manager.h")
-MANAGER_SOURCE = os.path.join(SDK_SRC,     "multi_rtmp_manager.cpp")
-BRIDGE_HEADER  = os.path.join(UI_INCLUDE,  "qml_bridge.h")
-BRIDGE_SOURCE  = os.path.join(UI_SRC,      "qml_bridge.cpp")
-PANEL_QML      = os.path.join(UI_QML, "panels", "MultiStreamPanel.qml")
-QML_QRC        = os.path.join(UI_QML, "qml.qrc")
+MANAGER_SOURCE = os.path.join(SDK_SRC, "multi_rtmp_manager.cpp")
+BRIDGE_HEADER = os.path.join(UI_INCLUDE, "qml_bridge.h")
+BRIDGE_SOURCE = os.path.join(UI_SRC, "qml_bridge.cpp")
+PANEL_QML = os.path.join(UI_QML, "panels", "MultiStreamPanel.qml")
+QML_QRC = os.path.join(UI_QML, "qml.qrc")
 
 
 def _read(path):
@@ -64,17 +61,17 @@ class TestMultiRtmpHeader:
     def test_rtmp_stream_status_enum_declared(self):
         text = _read(MANAGER_HEADER)
         assert "RtmpStreamStatus" in text
-        assert "Idle"       in text
+        assert "Idle" in text
         assert "Connecting" in text
-        assert "Live"       in text
-        assert "Error"      in text
+        assert "Live" in text
+        assert "Error" in text
 
     def test_stream_entry_struct_declared(self):
         text = _read(MANAGER_HEADER)
         assert "RtmpStreamEntry" in text
-        assert "serverUrl"  in text
-        assert "streamKey"  in text
-        assert "logLines"   in text
+        assert "serverUrl" in text
+        assert "streamKey" in text
+        assert "logLines" in text
         assert "statusMessage" in text
 
     def test_manager_class_declared(self):
@@ -352,15 +349,15 @@ class TestMultiStreamPanel:
     def test_panel_has_status_indicators(self):
         text = _read(PANEL_QML)
         # Should distinguish live, connecting, error, idle visually.
-        assert '"live"'       in text or "'live'"       in text
+        assert '"live"' in text or "'live'" in text
         assert '"connecting"' in text or "'connecting'" in text
-        assert '"error"'      in text or "'error'"      in text
+        assert '"error"' in text or "'error'" in text
 
     def test_panel_has_platform_support(self):
         text = _read(PANEL_QML)
-        assert "youtube"  in text
+        assert "youtube" in text
         assert "facebook" in text
-        assert "twitch"   in text
+        assert "twitch" in text
 
     def test_panel_has_log_area(self):
         text = _read(PANEL_QML)
@@ -400,15 +397,15 @@ class TestSystemConfig:
         with open(CONFIG_FILE, encoding="utf-8") as f:
             data = json.load(f)
         platforms = {s["platform"] for s in data["output"]["rtmp_streams"]}
-        assert "youtube"  in platforms
+        assert "youtube" in platforms
         assert "facebook" in platforms
-        assert "twitch"   in platforms
+        assert "twitch" in platforms
 
     def test_rtmp_stream_entries_have_required_fields(self):
         with open(CONFIG_FILE, encoding="utf-8") as f:
             data = json.load(f)
         for stream in data["output"]["rtmp_streams"]:
-            assert "name"       in stream
-            assert "platform"   in stream
+            assert "name" in stream
+            assert "platform" in stream
             assert "server_url" in stream
             assert "stream_key" in stream

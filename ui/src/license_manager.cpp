@@ -212,8 +212,8 @@ bool LicenseManager::isLicensed() const { return status_ == LicenseStatus::Valid
 static QUrl normalizeApiUrl(const QString& apiUrl) {
     QUrl url(apiUrl);
 
-    // If config accidentally contains only the Supabase project ref, help out:
-    // e.g. "qkcchctrmrpdyseplbvb" -> https://qkcchctrmrpdyseplbvb.supabase.co
+    // If config accidentally contains only the project ref, help out:
+    // e.g. "my-project-ref" -> https://my-project-ref.supabase.co
     if (!url.isValid() || url.scheme().isEmpty()) {
         if (!apiUrl.trimmed().isEmpty() && !apiUrl.contains("://")) {
             url = QUrl(QStringLiteral("https://%1.supabase.co").arg(apiUrl.trimmed()));
