@@ -1107,6 +1107,23 @@ Le patron **PIMPL** (Pointer to IMPLementation) est utilisé pour isoler les dé
 | Plateformes | YouTube Live, Facebook Live, Twitch, serveurs RTMP personnalisés |
 | Usage | Diffusion live vers les plateformes de streaming |
 
+#### Migration SDK → Engine (ENABLE_SDK_RTMP)
+
+Les fichiers SDK RTMP (`rtmp_output.cpp`, `multi_rtmp_manager.cpp`) ne sont plus compilés par défaut.
+Pour activer le mode legacy (non recommandé), utilisez l'option CMake `-DENABLE_SDK_RTMP=ON`.
+
+**Changements recommandés lors de la migration :**
+
+| Ancien (SDK) | Nouveau (Engine) |
+|--------------|------------------|
+| `#include "visioncast_sdk/rtmp_output.h"` | `#include "visioncast/ffmpeg_rtmp.h"` |
+| `#include "visioncast_sdk/multi_rtmp_manager.h"` | `#include "visioncast/multi_ffmpeg_rtmp_manager.h"` |
+| `RTMPOutput` | `visioncast::FFmpegRtmpOutput` |
+| `MultiRtmpManager` | `visioncast::MultiFFmpegRtmpManager` |
+| `RtmpStreamStatus` | `visioncast::RtmpStatus` |
+| `RtmpStreamEntry` | `visioncast::FFmpegRtmpStreamEntry` |
+| `rtmpStreamStatusToString()` | `visioncast::rtmpStatusToString()` |
+
 ---
 
 ### 9.6 Multi-Streaming (sorties RTMP simultanées)
