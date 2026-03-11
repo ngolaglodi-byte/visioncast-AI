@@ -2,6 +2,7 @@
 /// @brief Dialog for activating, validating, and managing a license key.
 
 #include "visioncast_ui/license_dialog.h"
+#include "visioncast_ui/license_manager.h"
 
 #include <QDir>
 #include <QFileInfo>

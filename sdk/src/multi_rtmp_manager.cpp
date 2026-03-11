@@ -143,7 +143,7 @@ bool MultiRtmpManager::removeStream(const std::string& id)
 
     std::lock_guard<std::mutex> lk(impl_->listMutex);
     auto it = std::find_if(impl_->streams.begin(), impl_->streams.end(),
-                           [&id](const std::unique_ptr<StreamRecord>& r) {
+                           [&id](const std::shared_ptr<StreamRecord>& r) {
                                return r->entry.id == id;
                            });
     if (it == impl_->streams.end()) return false;

@@ -78,7 +78,7 @@ class TalentsLoader:
         if not os.path.isfile(self.talents_path):
             logger.error("[TalentsLoader] Talents file not found: %s", self.talents_path)
             return 0
-            
+
         with open(self.talents_path, "r", encoding="utf-8") as fh:
             data = json.load(fh)
 
@@ -163,7 +163,7 @@ class TalentsLoader:
                 talent.get("name", "unknown")
             )
             return None
-            
+
         image_path = os.path.join(self.project_root, photo_path)
 
         if not os.path.isfile(image_path):

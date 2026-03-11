@@ -3,6 +3,9 @@
 /// @file license_manager.h
 /// @brief LicenseManager – communicates with the remote licensing API and
 /// supports offline grace mode.
+///
+/// VisionCast-AI — Licence officielle Prestige Technologie Company,
+/// développée par Glody Dimputu Ngola.
 
 #include <QObject>
 #include <QDateTime>

@@ -76,8 +76,9 @@ class TestLoadTalents:
 
 class TestLoadTalentEncodings:
 
+    @mock.patch("main.os.path.isfile", return_value=True)
     @mock.patch("main.face_recognition")
-    def test_successful_load(self, mock_fr):
+    def test_successful_load(self, mock_fr, mock_isfile):
         fake_enc = np.random.rand(128)
         mock_fr.load_image_file.return_value = np.zeros((100, 100, 3))
         mock_fr.face_encodings.return_value = [fake_enc]
@@ -89,8 +90,9 @@ class TestLoadTalentEncodings:
         assert len(metadata) == 1
         assert metadata[0]["name"] == "Alice"
 
+    @mock.patch("main.os.path.isfile", return_value=True)
     @mock.patch("main.face_recognition")
-    def test_missing_photo_skipped(self, mock_fr):
+    def test_missing_photo_skipped(self, mock_fr, mock_isfile):
         mock_fr.load_image_file.side_effect = FileNotFoundError("not found")
 
         talents = [{"name": "Ghost", "photo": "img/ghost.jpg"}]
@@ -99,8 +101,9 @@ class TestLoadTalentEncodings:
         assert encodings == []
         assert metadata == []
 
+    @mock.patch("main.os.path.isfile", return_value=True)
     @mock.patch("main.face_recognition")
-    def test_encoding_failure_skipped(self, mock_fr):
+    def test_encoding_failure_skipped(self, mock_fr, mock_isfile):
         mock_fr.load_image_file.return_value = np.zeros((100, 100, 3))
         mock_fr.face_encodings.side_effect = RuntimeError("dlib exploded")
 
@@ -110,8 +113,9 @@ class TestLoadTalentEncodings:
         assert encodings == []
         assert metadata == []
 
+    @mock.patch("main.os.path.isfile", return_value=True)
     @mock.patch("main.face_recognition")
-    def test_no_face_in_photo_skipped(self, mock_fr):
+    def test_no_face_in_photo_skipped(self, mock_fr, mock_isfile):
         mock_fr.load_image_file.return_value = np.zeros((100, 100, 3))
         mock_fr.face_encodings.return_value = []  # no face found
 
@@ -121,8 +125,9 @@ class TestLoadTalentEncodings:
         assert encodings == []
         assert metadata == []
 
+    @mock.patch("main.os.path.isfile", return_value=True)
     @mock.patch("main.face_recognition")
-    def test_partial_load_with_fallback(self, mock_fr):
+    def test_partial_load_with_fallback(self, mock_fr, mock_isfile):
         """When one talent fails, the rest should still load."""
         good_enc = np.random.rand(128)
 

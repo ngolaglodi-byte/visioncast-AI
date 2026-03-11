@@ -73,7 +73,7 @@ def load_talent_encodings(talents, project_root):
 
     Skips talents whose photo is missing or whose face cannot be encoded
     (fallback behaviour).  Returns *(encodings, metadata)* lists.
-    
+
     If face_recognition is not installed, returns empty lists with a warning.
     """
     if not HAS_FACE_RECOGNITION:
@@ -83,7 +83,7 @@ def load_talent_encodings(talents, project_root):
             "Install with: pip install face_recognition"
         )
         return [], []
-    
+
     encodings = []
     metadata = []
 
@@ -95,16 +95,16 @@ def load_talent_encodings(talents, project_root):
         if not photo_path:
             logger.warning("No photo path specified for talent '%s'. Skipping.", name)
             continue
-            
+
         image_path = os.path.join(project_root, photo_path)
-        
+
         if not os.path.isfile(image_path):
             logger.warning(
                 "Photo file not found for talent '%s' at '%s'. Skipping.",
                 name, image_path
             )
             continue
-        
+
         try:
             img = face_recognition.load_image_file(image_path)
         except Exception as exc:
@@ -138,7 +138,7 @@ def draw_lower_third(frame, title, subtitle):
     if not HAS_OPENCV:
         logger.debug("OpenCV not available, skipping lower-third overlay rendering.")
         return frame
-        
+
     h, w, _ = frame.shape
     band_h = int(h * 0.18)
 
@@ -157,7 +157,7 @@ def draw_lower_third(frame, title, subtitle):
 
 def run():
     """Main capture and recognition loop.
-    
+
     Requires OpenCV and face_recognition to be installed.
     Exits gracefully if dependencies are missing.
     """
@@ -167,14 +167,14 @@ def run():
             "Install with: pip install opencv-python"
         )
         return
-    
+
     if not HAS_FACE_RECOGNITION:
         logger.error(
             "face_recognition is not installed. "
             "Install with: pip install face_recognition"
         )
         return
-    
+
     _lower_third_timers = {}
     _consecutive_read_failures = 0
     MAX_READ_FAILURES = 30
