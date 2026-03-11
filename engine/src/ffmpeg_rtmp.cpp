@@ -217,8 +217,9 @@ bool FFmpegRtmpOutput::start() {
     impl_->codecCtx->width    = cfg.width;
     impl_->codecCtx->height   = cfg.height;
     // Use a scaled time_base for fractional frame rates (e.g., 29.97 fps)
-    // time_base = 1/1000 allows for millisecond precision
-    impl_->codecCtx->time_base = {1, 1000};
+    // time_base = 1000 / (frameRate * 1000) = 1 / frameRate (duration of one frame in seconds)
+    // framerate = frameRate * 1000 / 1000 = frameRate (frames per second)
+    impl_->codecCtx->time_base = {1000, static_cast<int>(cfg.frameRate * 1000)};
     impl_->codecCtx->framerate = {static_cast<int>(cfg.frameRate * 1000), 1000};
     impl_->codecCtx->gop_size = 12;
     impl_->codecCtx->pix_fmt  = AV_PIX_FMT_YUV420P;
