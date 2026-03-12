@@ -8,9 +8,9 @@ Validates that:
 - The config/system.json declares rtmp_streams.
 - The QML panel file exists and references the bridge properties.
 
-NOTE: This module was renamed from test_multi_rtmp.py to reflect the migration
-from the deprecated SDK RTMP (visioncast_sdk/multi_rtmp_manager.h) to the new
-engine-based FFmpeg RTMP (visioncast/multi_ffmpeg_rtmp_manager.h).
+NOTE: This module validates the new engine-based FFmpeg RTMP implementation
+(visioncast/multi_ffmpeg_rtmp_manager.h) which replaced the deprecated SDK RTMP
+(visioncast_sdk/multi_rtmp_manager.h).
 """
 
 import json
@@ -89,7 +89,7 @@ class TestMultiFFmpegRtmpHeader:
     def test_manager_uses_pimpl(self):
         text = _read(MANAGER_HEADER)
         assert "struct Impl" in text
-        # Uses shared_ptr instead of unique_ptr for thread safety
+        # Uses shared_ptr for shared ownership across worker threads
         assert "std::shared_ptr<Impl>" in text
 
     def test_manager_non_copyable(self):
